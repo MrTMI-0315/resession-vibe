@@ -1,94 +1,106 @@
-# Resession (Flutter MVP)
-Resession은 `start -> run -> break -> end -> save` 루프를 빠르게 돌며 집중 세션을 운영하는 Flutter MVP입니다.
+# Resession
+한 줄 요약: 기록 부담을 낮추고 집중 흐름을 유지하도록 돕는 Flutter 기반 포커스 세션 MVP입니다.
 
-- 포함 범위(MVP)
-  - Home(Idle) 화면에서 프리셋 선택 후 세션 시작
-  - Focus 카운트다운, Pause로 Break 전환, Resume으로 Focus 복귀
-  - Focus 종료 시 End 화면 전환, `Log / Save`로 Home 복귀
-  - 세션 기록은 현재 인메모리(`SessionRecord`)로만 유지
-- 비포함 범위(Non-goals)
-  - 영구 저장(DB/클라우드)
-  - 인증/동기화/백엔드 연동
-  - 상세 인사이트 화면 및 통계 시각화
-  - Drift log 고도화(현재는 MVP 범위 밖)
+![Resession Screenshot Placeholder](./docs/screenshot-placeholder.png)
 
-## 데모/레퍼런스
-- Figma: [Resession-MVP-v0.1](https://www.figma.com/design/Abr8taz3MIqu5ENuaVwqBb/Resession-MVP-v0.1?node-id=28-4&t=NdaHx3bNBupBeUp3-1)
-- 현재 구현 플로우
-  - `Home(Idle) -> Focus(Running) -> Break -> End -> Log/Save -> Home`
+## 1) 소개
+Resession은 짧은 집중 세션을 시작하고, 필요할 때 휴식으로 전환한 뒤, 다시 집중으로 복귀해 마무리까지 이어지는 흐름을 제공합니다. 핵심은 사용자가 복잡한 입력 없이도 `시작 -> 진행 -> 휴식 -> 종료 -> 저장` 사이클을 반복할 수 있게 하는 것입니다.
 
-## 빠른 시작(로컬 실행)
-- 요구사항
-  - Flutter SDK(stable) 설치
-  - Dart SDK `^3.10.8` 호환(현재 `pubspec.yaml` 기준)
-  - macOS 데스크톱 실행 시 Xcode(Command Line Tools 포함) 권장
-  - iOS 빌드가 필요하면 CocoaPods 설치 필요
-  - 개발 타깃은 `macOS` 또는 `Chrome` 사용 가능
+현재 저장은 인메모리 기반이며, 상태관리는 `ChangeNotifier` 기반 `SessionController` 1개로 구성되어 있습니다. iOS/Android 세팅이 없어도 macOS/Chrome 실행으로 기능 확인이 가능합니다.
 
-- 설치/검증/실행 명령(복붙용)
+## 2) 핵심 사용자 플로우
+- Home/Idle 화면 진입
+- 프리셋 선택: `25/5`, `50/10`, `custom`
+- `Start session`으로 Focus 시작
+- `Pause`로 Break 전환
+- `Resume`으로 Focus 복귀
+- Focus 종료 시 End 화면 진입
+- `Log / Save` 후 Home 복귀
+
+## 3) 구현된 기능
+- [x] MVP vertical slice: `Home -> Focus -> Break -> End -> Save -> Home`
+- [x] 프리셋 선택: `25/5`, `50/10`, `custom` 모두 탭 가능 (Idle에서 즉시 반영)
+- [x] 단일 상태관리: `SessionController(ChangeNotifier)`
+- [x] 모델 구성: `SessionPreset`, `SessionRunState`, `SessionRecord` (인메모리)
+- [x] 공통 UI 위젯: 상태 카드 / 프리셋 칩 / CTA 버튼
+- [x] 타이머 예산 로직 보정 완료 (Focus/Break 예산 보존)
+- [x] `flutter analyze`, `flutter test` 통과
+- [x] macOS 스모크 런 성공
+
+## 4) 기술 메모
+타이머는 `phase 시작 시각 + 기준 잔여시간` 방식으로 계산합니다.  
+화면에는 `currentFocusRemainingSeconds`, `currentBreakRemainingSeconds` getter 값을 표시합니다.  
+Focus -> Break 전환 시 Focus 잔여시간을 동결합니다.  
+Break -> Focus 전환 시 Break 잔여 예산을 차감한 상태로 유지합니다.  
+따라서 Break 재진입 시 초기값으로 리셋되지 않고 남은 예산에서 이어집니다.
+
+## 5) 설치/실행
+요구사항:
+- Flutter SDK (stable)
+- Dart SDK `^3.10.8` 호환
+- macOS 실행 시 Xcode(Command Line Tools 포함) 권장
+
+참고:
+- iOS/Android는 아직 세팅 안 되어도 macOS/Chrome로 충분히 확인 가능합니다.
+
+macOS 실행:
 ```bash
+cd /Users/mrtmi/Desktop/Mr_TMI/vibe/apps/resession
 flutter pub get
-flutter analyze
-flutter test
 flutter run -d macos
-# 또는
+```
+
+Chrome 실행:
+```bash
+cd /Users/mrtmi/Desktop/Mr_TMI/vibe/apps/resession
+flutter pub get
 flutter run -d chrome
 ```
 
-- iOS 실기기 연결(선택 사항)
+## 6) 테스트/정적분석
 ```bash
-flutter devices
-flutter run -d <ios-device-id>
+cd /Users/mrtmi/Desktop/Mr_TMI/vibe/apps/resession
+flutter analyze
+flutter test
 ```
 
-## 프로젝트 구조
+현재 상태:
+- `flutter analyze`: No issues found
+- `flutter test`: All tests passed (3 tests)
+
+## 7) 수동 검증 체크리스트
+- Home에서 `50/10` 선택 -> `Start` -> `Pause` -> Break에서 2초 대기 -> `Resume`:
+  - Focus가 Break 동안 추가 감소하지 않는지 확인
+- 다시 `Pause`:
+  - Break가 초기값으로 리셋되지 않고 남은 값에서 이어지는지 확인
+
+## 8) 폴더 구조 요약
 ```text
 lib/
   main.dart
-  app/app.dart
+  app/
+    app.dart
   features/
-    home/home_screen.dart
+    home/
+      home_screen.dart
     session/
       session_controller.dart
       session_screen.dart
       break_screen.dart
       end_screen.dart
-  ui/widgets/
-    session_template.dart
-    session_status_card.dart
-    preset_selector.dart
-    primary_cta_button.dart
-test/
-  widget_test.dart
+  ui/
+    widgets/
+      session_template.dart
+      session_status_card.dart
+      preset_selector.dart
+      primary_cta_button.dart
 ```
 
-- 핵심 파일 역할
-  - `lib/main.dart`: 앱 엔트리, `ResessionApp` 실행
-  - `lib/app/app.dart`: `MaterialApp`/테마 설정, phase 기반 루트 화면 선택
-  - `lib/features/home/...`: Idle(Home) 화면 구성
-  - `lib/features/session/...`: 세션 상태머신/타이머(`session_controller.dart`) 및 Focus/Break/End 화면
-  - `lib/ui/widgets/...`: 공통 UI 조합(상태 카드, 프리셋 칩, CTA 버튼)
-  - `test/...`: 위젯 스모크 + 기본 세션 플로우 전환 테스트
+## 9) 다음 작업(Backlog)
+- custom 프리셋의 분/휴식 입력 UI 추가
+- 세션 기록의 영구 저장(로컬/DB) 도입
+- 통계/insights 화면 확장
 
-## 기능 스펙 요약(MVP)
-- 프리셋
-  - `25/5`, `50/10`, `custom` 선택 가능
-  - 선택 상태가 UI에서 즉시 반영됨
-- 상태머신
-  - `idle -> focus -> breakTime -> focus(재개) -> ended`
-  - Focus 시간이 0이 되면 End 화면으로 전환
-- 저장
-  - 현재: `SessionRecord` 인메모리 저장(`Log / Save` 시 append)
-  - 이후 계획(선택): 로컬 영구 저장 + 히스토리 화면 연결
-
-## 개발 원칙(개발공부 지침 반영)
-- 증거 기반으로 작업하고, 실행한 명령/결과를 기준으로 판단합니다.
-- 최소 변경 원칙을 지켜 작은 범위로 수정하고 빠르게 검증합니다.
-- 마이크로 태스크 단위로 구현하고, 각 단계에서 `analyze/test`를 확인합니다.
-- 새 의존성/큰 리팩토링은 필요성이 명확할 때만 제안합니다.
-- 커밋 규칙(권장): `1커밋 = 1마이크로태스크`.
-
-## 다음 작업(Backlog)
-- custom 프리셋의 실제 입력 UI(분/휴식) 추가
-- 저장된 세션 1줄 히스토리(최근 기록) 노출
-- Drift log(옵션) 최소 입력 스텁 연결
+## 10) 라이선스/기타
+- 라이선스: 현재 저장소에 별도 라이선스 표기가 없으면 기본적으로 명시되지 않은 상태입니다.
+- 기타: 이 프로젝트는 의존성 추가 없이 Flutter 기본 구성으로 MVP를 유지합니다.
