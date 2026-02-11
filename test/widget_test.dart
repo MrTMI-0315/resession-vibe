@@ -163,6 +163,40 @@ void main() {
     controller.dispose();
   });
 
+  testWidgets('Break auto-resumes to focus when break reaches zero', (
+    WidgetTester tester,
+  ) async {
+    final _TestClock clock = _TestClock(DateTime(2026, 1, 1, 0, 0, 0));
+    final SessionController controller = SessionController(
+      nowProvider: () => clock.now,
+      storage: InMemorySessionStorage(),
+    );
+    controller.selectCustomPreset(1, 1);
+
+    await tester.pumpWidget(ResessionApp(controller: controller));
+    await tester.pump();
+
+    await tester.tap(find.text('Start session'));
+    await tester.pump();
+    await tester.tap(find.text('Pause'));
+    await tester.pump();
+
+    expect(controller.runState.phase, SessionPhase.breakTime);
+    expect(find.text('Break'), findsOneWidget);
+    expect(find.text('Resume'), findsOneWidget);
+
+    clock.advance(const Duration(seconds: 61));
+    await tester.pump(const Duration(seconds: 61));
+
+    expect(controller.runState.phase, SessionPhase.focus);
+    expect(controller.currentBreakRemainingSeconds, 0);
+    expect(find.text('Focus'), findsOneWidget);
+    expect(find.text('Resume'), findsNothing);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    controller.dispose();
+  });
+
   testWidgets('Drift bottom sheet logs category during focus', (
     WidgetTester tester,
   ) async {

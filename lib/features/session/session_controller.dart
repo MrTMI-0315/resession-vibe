@@ -574,12 +574,7 @@ class SessionController extends ChangeNotifier {
 
     if (_runState.phase == SessionPhase.breakTime) {
       if (currentBreakRemainingSeconds <= 0) {
-        _runState = _runState.copyWith(
-          breakRemainingSeconds: 0,
-          phaseStartedAt: _now(),
-        );
-        _timer?.cancel();
-        _safeNotifyListeners();
+        resumeFocus();
         return;
       }
       _safeNotifyListeners();
