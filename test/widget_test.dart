@@ -441,6 +441,10 @@ void main() {
 
     expect(find.text('History'), findsOneWidget);
     expect(
+      find.byKey(const ValueKey<String>('history-insight-today-sessions')),
+      findsOneWidget,
+    );
+    expect(
       find.byKey(const ValueKey<String>('history-insight-today')),
       findsOneWidget,
     );
@@ -452,6 +456,7 @@ void main() {
       find.byKey(const ValueKey<String>('history-insight-top-drift')),
       findsOneWidget,
     );
+    expect(find.text('Today Sessions: 2'), findsOneWidget);
     expect(find.text('Today Total Focus: 02:00'), findsOneWidget);
     expect(find.text('Average Focus (last 7): 01:00'), findsOneWidget);
     expect(find.text('Top Drift (last 7): none'), findsOneWidget);
@@ -493,7 +498,65 @@ void main() {
     await tester.tap(find.byKey(const ValueKey<String>('history-nav-button')));
     await tester.pumpAndSettle();
 
+    expect(find.text('Today Sessions: 0'), findsOneWidget);
     expect(find.text('Today Total Focus: 00:00'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    controller.dispose();
+  });
+
+  testWidgets('History today sessions includes today and excludes yesterday', (
+    WidgetTester tester,
+  ) async {
+    final _TestClock clock = _TestClock(DateTime(2026, 1, 2, 9, 0, 0));
+    final InMemorySessionStorage storage = InMemorySessionStorage([
+      SessionRecord(
+        title: 'Today 1',
+        startedAt: DateTime(2026, 1, 2, 7, 0, 0),
+        endedAt: DateTime(2026, 1, 2, 7, 20, 0),
+        presetLabel: '25/5',
+        plannedFocus: 25,
+        plannedBreak: 5,
+        actualFocusSeconds: 300,
+        actualBreakSeconds: 20,
+        completed: true,
+      ),
+      SessionRecord(
+        title: 'Today 2',
+        startedAt: DateTime(2026, 1, 2, 8, 0, 0),
+        endedAt: DateTime(2026, 1, 2, 8, 20, 0),
+        presetLabel: '25/5',
+        plannedFocus: 25,
+        plannedBreak: 5,
+        actualFocusSeconds: 400,
+        actualBreakSeconds: 25,
+        completed: true,
+      ),
+      SessionRecord(
+        title: 'Yesterday',
+        startedAt: DateTime(2026, 1, 1, 8, 0, 0),
+        endedAt: DateTime(2026, 1, 1, 8, 20, 0),
+        presetLabel: '25/5',
+        plannedFocus: 25,
+        plannedBreak: 5,
+        actualFocusSeconds: 500,
+        actualBreakSeconds: 30,
+        completed: true,
+      ),
+    ]);
+
+    final SessionController controller = SessionController(
+      storage: storage,
+      nowProvider: () => clock.now,
+    );
+
+    await tester.pumpWidget(ResessionApp(controller: controller));
+    await tester.pump();
+
+    await tester.tap(find.byKey(const ValueKey<String>('history-nav-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Today Sessions: 2'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
     controller.dispose();

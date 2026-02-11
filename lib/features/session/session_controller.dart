@@ -227,6 +227,22 @@ class SessionController extends ChangeNotifier {
     return 'Today Total Focus: ${formatDurationMMSS(totalFocusSeconds)}';
   }
 
+  String get historyTodaySessionsCountInsight {
+    final DateTime now = _now();
+    final DateTime todayStart = DateTime(now.year, now.month, now.day);
+    final DateTime todayEnd = todayStart.add(const Duration(days: 1));
+
+    int todaySessions = 0;
+    for (final SessionRecord record in _records) {
+      final DateTime recordTime = _recordTimestampForToday(record);
+      if (!recordTime.isBefore(todayStart) && recordTime.isBefore(todayEnd)) {
+        todaySessions += 1;
+      }
+    }
+
+    return 'Today Sessions: $todaySessions';
+  }
+
   String get historyTopDriftInsight {
     final List<SessionRecord> recent = _historyInsightRecords;
     final Map<String, int> counts = <String, int>{};

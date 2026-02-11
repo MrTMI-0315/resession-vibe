@@ -76,6 +76,12 @@ class _InsightHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
+          controller.historyTodaySessionsCountInsight,
+          key: const ValueKey<String>('history-insight-today-sessions'),
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 4),
+        Text(
           controller.historyTodayTotalFocusInsight,
           key: const ValueKey<String>('history-insight-today'),
           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
