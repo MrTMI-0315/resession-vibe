@@ -10,6 +10,7 @@
 - 플로우: `Home/Idle -> Focus -> Break -> End -> Save -> Home` 동작.
 - 프리셋: `25/5`, `50/10`, `custom` 선택 가능, custom은 bottom sheet 입력 후 `Custom (x/y)`로 반영.
 - 타이머 불변식: Break 중 Focus 동결, Break 공유 예산 유지(재진입 시 리셋 없음), remaining 0 clamp.
+- Decision (MVP): Break 타이머가 0에 도달하면 사용자 입력 없이 자동으로 Focus로 복귀한다. (토글/A-B 없음)
 - 시간 계산: `phaseStartedAt + baseRemaining` 기반 getter(`currentFocusRemainingSeconds`, `currentBreakRemainingSeconds`).
 - 기록: `SessionRecord`를 `shared_preferences` 키 `resession_session_records_v1`로 저장/로드.
 - Session title: Home 입력(`지금 할 일(선택)`) -> Start 전달 -> Save 시 record 반영 -> End/History/Home Recent에 표시(미입력 시 `Untitled`).
@@ -20,6 +21,7 @@
 - 현재 브랜치에는 한 커밋에 여러 마이크로태스크 변경이 함께 포함된 이력이 있어 변경 추적성이 낮을 수 있다.
 - iOS/Android 디바이스 실주행 검증은 보장하지 않으며, 현재 검증 경로는 macOS/Chrome 중심이다.
 - History/Insight는 최소 구현이며, 고급 통계(기간 필터, 추세, 완료율 분해)는 미구현이다.
+- 자동복귀는 MVP 결정이며, 사용자 선호 차이는 후속 사용자 테스트/데모 피드백으로 검증한다. (옵션 토글/A-B는 MVP 범위 밖)
 
 ## How to Run / Test
 기준 경로:
@@ -60,3 +62,4 @@ flutter test
 1) Drift 로그(v0.1 optional) 입력/저장 경로 추가 및 End/History 연동.
 2) History Insight 확장(예: 오늘 총 Focus, 최근 N개 완료율) + 필터 최소 UI.
 3) Session title UX 보강(길이 제한, 공백/중복 처리 가드레일, 관련 테스트 추가).
+4) (Future) Auto-resume 토글/A-B는 MVP 이후에만 고려한다(사용자 테스트 결과 기반).
