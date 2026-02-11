@@ -163,6 +163,43 @@ void main() {
     controller.dispose();
   });
 
+  testWidgets('Drift bottom sheet logs category during focus', (
+    WidgetTester tester,
+  ) async {
+    final SessionController controller = SessionController(
+      storage: InMemorySessionStorage(),
+    );
+
+    await tester.pumpWidget(ResessionApp(controller: controller));
+    await tester.pump();
+
+    await tester.tap(find.text('Start session'));
+    await tester.pump();
+    expect(controller.runState.phase, SessionPhase.focus);
+
+    await tester.tap(find.byKey(const ValueKey<String>('drift-open-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Drift log'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey<String>('drift-category-알림')));
+    await tester.enterText(
+      find.byKey(const ValueKey<String>('drift-note-input')),
+      'ping',
+    );
+    await tester.tap(
+      find.byKey(const ValueKey<String>('drift-confirm-button')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(controller.runState.phase, SessionPhase.focus);
+    expect(controller.runState.driftEvents.length, 1);
+    expect(controller.runState.driftEvents.last.category, '알림');
+    expect(controller.runState.driftEvents.last.note, 'ping');
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    controller.dispose();
+  });
+
   testWidgets(
     'Large time jump clamps remaining to zero and transitions safely',
     (WidgetTester tester) async {
@@ -274,6 +311,57 @@ void main() {
       find.textContaining('Write report • Custom (1/1) •'),
       findsOneWidget,
     );
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    secondController.dispose();
+  });
+
+  testWidgets('Drift summary persists to home, end, and history', (
+    WidgetTester tester,
+  ) async {
+    final InMemorySessionStorage storage = InMemorySessionStorage();
+    final _TestClock clock = _TestClock(DateTime(2026, 1, 1, 8, 0, 0));
+
+    final SessionController firstController = SessionController(
+      nowProvider: () => clock.now,
+      storage: storage,
+    );
+    firstController.selectCustomPreset(1, 1);
+
+    await tester.pumpWidget(ResessionApp(controller: firstController));
+    await tester.pump();
+
+    await tester.tap(find.text('Start session'));
+    await tester.pump();
+
+    firstController.logDrift(category: '알림');
+    expect(firstController.runState.driftEvents.length, 1);
+
+    clock.advance(const Duration(seconds: 65));
+    await tester.pump(const Duration(seconds: 65));
+
+    expect(find.text('Last drift: 알림'), findsOneWidget);
+
+    await tester.tap(find.text('Log / Save'));
+    await tester.pump();
+    expect(find.textContaining('Drift 알림'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    firstController.dispose();
+
+    final SessionController secondController = SessionController(
+      nowProvider: () => clock.now,
+      storage: storage,
+    );
+
+    await tester.pumpWidget(ResessionApp(controller: secondController));
+    await tester.pump();
+
+    expect(find.textContaining('Drift 알림'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey<String>('history-nav-button')));
+    await tester.pumpAndSettle();
+    expect(find.text('Drift: 알림'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
     secondController.dispose();

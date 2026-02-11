@@ -28,6 +28,7 @@ class SessionRunState {
     required this.preset,
     required this.phase,
     required this.sessionTitle,
+    required this.driftEvents,
     required this.focusRemainingSeconds,
     required this.breakRemainingSeconds,
     required this.phaseStartedAt,
@@ -40,6 +41,7 @@ class SessionRunState {
       preset: preset,
       phase: SessionPhase.idle,
       sessionTitle: null,
+      driftEvents: const <DriftEvent>[],
       focusRemainingSeconds: preset.focusSeconds,
       breakRemainingSeconds: preset.breakSeconds,
       phaseStartedAt: null,
@@ -51,6 +53,7 @@ class SessionRunState {
   final SessionPreset preset;
   final SessionPhase phase;
   final String? sessionTitle;
+  final List<DriftEvent> driftEvents;
   final int focusRemainingSeconds;
   final int breakRemainingSeconds;
   final DateTime? phaseStartedAt;
@@ -61,6 +64,7 @@ class SessionRunState {
     SessionPreset? preset,
     SessionPhase? phase,
     String? sessionTitle,
+    List<DriftEvent>? driftEvents,
     int? focusRemainingSeconds,
     int? breakRemainingSeconds,
     DateTime? phaseStartedAt,
@@ -73,6 +77,7 @@ class SessionRunState {
       preset: preset ?? this.preset,
       phase: phase ?? this.phase,
       sessionTitle: sessionTitle ?? this.sessionTitle,
+      driftEvents: driftEvents ?? this.driftEvents,
       focusRemainingSeconds:
           focusRemainingSeconds ?? this.focusRemainingSeconds,
       breakRemainingSeconds:
@@ -105,6 +110,14 @@ class SessionController extends ChangeNotifier {
   static const int maxCustomFocusMinutes = 180;
   static const int minCustomBreakMinutes = 1;
   static const int maxCustomBreakMinutes = 60;
+  static const List<String> driftCategories = <String>[
+    '알림',
+    '딴생각',
+    '메신저',
+    '피로',
+    '완벽주의',
+    '환경',
+  ];
 
   final List<SessionRecord> _records = [];
   SessionPreset _selectedPreset;
@@ -179,6 +192,10 @@ class SessionController extends ChangeNotifier {
     return max(0, planned - remaining);
   }
 
+  String? get currentLastDriftCategory {
+    return summarizeLastDriftCategory(_runState.driftEvents);
+  }
+
   static String formatDurationMMSS(int totalSeconds) {
     final int normalized = max(0, totalSeconds);
     final int minutes = normalized ~/ 60;
@@ -193,6 +210,13 @@ class SessionController extends ChangeNotifier {
   static String displayTitle(String? title) {
     final String normalized = title?.trim() ?? '';
     return normalized.isEmpty ? 'Untitled' : normalized;
+  }
+
+  static String? summarizeLastDriftCategory(List<DriftEvent> drifts) {
+    if (drifts.isEmpty) {
+      return null;
+    }
+    return drifts.last.category;
   }
 
   String presetDisplayLabel(SessionPreset preset) {
@@ -265,6 +289,7 @@ class SessionController extends ChangeNotifier {
       preset: _selectedPreset,
       phase: SessionPhase.focus,
       sessionTitle: normalizedTitle.isEmpty ? null : normalizedTitle,
+      driftEvents: const <DriftEvent>[],
       focusRemainingSeconds: _selectedPreset.focusSeconds,
       breakRemainingSeconds: _selectedPreset.breakSeconds,
       phaseStartedAt: now,
@@ -272,6 +297,33 @@ class SessionController extends ChangeNotifier {
       endedAt: null,
     );
     _startTicker();
+    _safeNotifyListeners();
+  }
+
+  void logDrift({required String category, String? note}) {
+    if (_runState.phase != SessionPhase.focus) {
+      return;
+    }
+
+    final String normalizedCategory = category.trim();
+    if (normalizedCategory.isEmpty) {
+      return;
+    }
+
+    final String? normalizedNote = (note ?? '').trim().isEmpty
+        ? null
+        : note!.trim();
+
+    final List<DriftEvent> nextDrifts =
+        List<DriftEvent>.from(_runState.driftEvents)..add(
+          DriftEvent(
+            atEpochMs: _now().millisecondsSinceEpoch,
+            category: normalizedCategory,
+            note: normalizedNote,
+          ),
+        );
+
+    _runState = _runState.copyWith(driftEvents: nextDrifts);
     _safeNotifyListeners();
   }
 
@@ -380,6 +432,7 @@ class SessionController extends ChangeNotifier {
         actualFocusSeconds: actualFocusElapsedSeconds,
         actualBreakSeconds: actualBreakElapsedSeconds,
         completed: true,
+        drifts: List<DriftEvent>.from(_runState.driftEvents),
       ),
     );
     unawaited(_persistRecords());

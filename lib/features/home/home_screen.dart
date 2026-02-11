@@ -272,10 +272,12 @@ class _RecentSessionsSection extends StatelessWidget {
             )
           else
             ...records.map((SessionRecord record) {
+              final String? lastDriftCategory =
+                  SessionController.summarizeLastDriftCategory(record.drifts);
               return Padding(
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Text(
-                  '${SessionController.displayTitle(record.title)} • ${record.presetLabel} • Focus ${SessionController.formatDurationMMSS(record.actualFocusSeconds)} • ${_formatDateTime(record.endedAt)}',
+                  '${SessionController.displayTitle(record.title)} • ${record.presetLabel} • Focus ${SessionController.formatDurationMMSS(record.actualFocusSeconds)}${lastDriftCategory == null ? '' : ' • Drift $lastDriftCategory'} • ${_formatDateTime(record.endedAt)}',
                   style: const TextStyle(
                     fontSize: 12,
                     color: Color(0xFF3A3A3A),

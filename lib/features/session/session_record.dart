@@ -1,3 +1,31 @@
+class DriftEvent {
+  const DriftEvent({
+    required this.atEpochMs,
+    required this.category,
+    this.note,
+  });
+
+  final int atEpochMs;
+  final String category;
+  final String? note;
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'atEpochMs': atEpochMs,
+      'category': category,
+      'note': note,
+    };
+  }
+
+  factory DriftEvent.fromJson(Map<String, dynamic> json) {
+    return DriftEvent(
+      atEpochMs: (json['atEpochMs'] as num).toInt(),
+      category: json['category'] as String,
+      note: json['note'] as String?,
+    );
+  }
+}
+
 class SessionRecord {
   const SessionRecord({
     required this.title,
@@ -9,6 +37,7 @@ class SessionRecord {
     required this.actualFocusSeconds,
     required this.actualBreakSeconds,
     required this.completed,
+    this.drifts = const <DriftEvent>[],
   });
 
   final String? title;
@@ -20,6 +49,7 @@ class SessionRecord {
   final int actualFocusSeconds;
   final int actualBreakSeconds;
   final bool completed;
+  final List<DriftEvent> drifts;
 
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
@@ -32,6 +62,9 @@ class SessionRecord {
       'actualFocusSeconds': actualFocusSeconds,
       'actualBreakSeconds': actualBreakSeconds,
       'completed': completed,
+      'drifts': drifts
+          .map((DriftEvent drift) => drift.toJson())
+          .toList(growable: false),
     };
   }
 
@@ -50,6 +83,12 @@ class SessionRecord {
           (json['actualBreakSeconds'] as int?) ??
           (json['plannedBreak'] as int) * 60,
       completed: json['completed'] as bool,
+      drifts: ((json['drifts'] as List<dynamic>?) ?? <dynamic>[])
+          .whereType<Map<dynamic, dynamic>>()
+          .map((Map<dynamic, dynamic> entry) {
+            return DriftEvent.fromJson(Map<String, dynamic>.from(entry));
+          })
+          .toList(growable: false),
     );
   }
 }

@@ -127,6 +127,12 @@ class _RecordCard extends StatelessWidget {
             'Break: ${SessionController.formatDurationMMSS(record.actualBreakSeconds)}',
             style: const TextStyle(fontSize: 12),
           ),
+          if (SessionController.summarizeLastDriftCategory(record.drifts) !=
+              null)
+            Text(
+              'Drift: ${SessionController.summarizeLastDriftCategory(record.drifts)}',
+              style: const TextStyle(fontSize: 12),
+            ),
           Text(
             'Start: ${_formatDateTime(record.startedAt)}',
             style: const TextStyle(fontSize: 12),

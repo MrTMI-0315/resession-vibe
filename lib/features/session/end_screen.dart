@@ -30,6 +30,7 @@ class EndScreen extends StatelessWidget {
         actualBreakSeconds: controller.actualBreakElapsedSeconds,
         startedAt: state.startedAt,
         endedAt: state.endedAt,
+        lastDriftCategory: controller.currentLastDriftCategory,
       ),
     );
   }
@@ -45,6 +46,7 @@ class _EndSummary extends StatelessWidget {
     required this.actualBreakSeconds,
     required this.startedAt,
     required this.endedAt,
+    required this.lastDriftCategory,
   });
 
   final String? title;
@@ -55,6 +57,7 @@ class _EndSummary extends StatelessWidget {
   final int actualBreakSeconds;
   final DateTime? startedAt;
   final DateTime? endedAt;
+  final String? lastDriftCategory;
 
   @override
   Widget build(BuildContext context) {
@@ -86,6 +89,11 @@ class _EndSummary extends StatelessWidget {
             'Actual: Focus ${SessionController.formatDurationMMSS(actualFocusSeconds)} • Break ${SessionController.formatDurationMMSS(actualBreakSeconds)}',
             style: const TextStyle(fontSize: 12),
           ),
+          if (lastDriftCategory != null)
+            Text(
+              'Last drift: $lastDriftCategory',
+              style: const TextStyle(fontSize: 12),
+            ),
           Text(
             'Start: ${_formatDateTime(startedAt)}',
             style: const TextStyle(fontSize: 12),
