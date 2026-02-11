@@ -23,6 +23,7 @@ class BreakScreen extends StatelessWidget {
       onCtaPressed: controller.resumeFocus,
       presets: SessionController.presets,
       selectedPreset: state.preset,
+      presetLabelBuilder: controller.presetDisplayLabel,
     );
   }
 }

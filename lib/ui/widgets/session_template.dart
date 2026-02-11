@@ -17,17 +17,21 @@ class SessionTemplate extends StatelessWidget {
     required this.selectedPreset,
     this.statusDotColor,
     this.onPresetSelected,
+    this.extraContent,
+    this.presetLabelBuilder,
   });
 
   final String statusLabel;
   final String timeText;
   final String description;
   final String ctaLabel;
-  final VoidCallback onCtaPressed;
+  final VoidCallback? onCtaPressed;
   final List<SessionPreset> presets;
   final SessionPreset selectedPreset;
   final Color? statusDotColor;
   final ValueChanged<SessionPreset>? onPresetSelected;
+  final Widget? extraContent;
+  final String Function(SessionPreset)? presetLabelBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -80,7 +84,12 @@ class SessionTemplate extends StatelessWidget {
                             presets: presets,
                             selectedPreset: selectedPreset,
                             onSelected: onPresetSelected,
+                            labelBuilder: presetLabelBuilder,
                           ),
+                          if (extraContent != null) ...[
+                            const SizedBox(height: 16),
+                            extraContent!,
+                          ],
                         ],
                       ),
                     ),

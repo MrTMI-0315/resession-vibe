@@ -3,6 +3,9 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 
+import 'session_record.dart';
+import 'session_storage.dart';
+
 enum SessionPhase { idle, focus, breakTime, ended }
 
 class SessionPreset {
@@ -24,6 +27,7 @@ class SessionRunState {
   const SessionRunState({
     required this.preset,
     required this.phase,
+    required this.sessionTitle,
     required this.focusRemainingSeconds,
     required this.breakRemainingSeconds,
     required this.phaseStartedAt,
@@ -35,6 +39,7 @@ class SessionRunState {
     return SessionRunState(
       preset: preset,
       phase: SessionPhase.idle,
+      sessionTitle: null,
       focusRemainingSeconds: preset.focusSeconds,
       breakRemainingSeconds: preset.breakSeconds,
       phaseStartedAt: null,
@@ -45,6 +50,7 @@ class SessionRunState {
 
   final SessionPreset preset;
   final SessionPhase phase;
+  final String? sessionTitle;
   final int focusRemainingSeconds;
   final int breakRemainingSeconds;
   final DateTime? phaseStartedAt;
@@ -54,6 +60,7 @@ class SessionRunState {
   SessionRunState copyWith({
     SessionPreset? preset,
     SessionPhase? phase,
+    String? sessionTitle,
     int? focusRemainingSeconds,
     int? breakRemainingSeconds,
     DateTime? phaseStartedAt,
@@ -65,6 +72,7 @@ class SessionRunState {
     return SessionRunState(
       preset: preset ?? this.preset,
       phase: phase ?? this.phase,
+      sessionTitle: sessionTitle ?? this.sessionTitle,
       focusRemainingSeconds:
           focusRemainingSeconds ?? this.focusRemainingSeconds,
       breakRemainingSeconds:
@@ -78,45 +86,54 @@ class SessionRunState {
   }
 }
 
-class SessionRecord {
-  const SessionRecord({
-    required this.startedAt,
-    required this.endedAt,
-    required this.presetLabel,
-    required this.plannedFocus,
-    required this.plannedBreak,
-    required this.completed,
-  });
-
-  final DateTime startedAt;
-  final DateTime endedAt;
-  final String presetLabel;
-  final int plannedFocus;
-  final int plannedBreak;
-  final bool completed;
-}
-
 class SessionController extends ChangeNotifier {
-  SessionController({DateTime Function()? nowProvider})
+  SessionController({DateTime Function()? nowProvider, SessionStorage? storage})
     : _selectedPreset = presets.first,
       _runState = SessionRunState.idle(preset: presets.first),
-      _now = nowProvider ?? DateTime.now;
+      _now = nowProvider ?? DateTime.now,
+      _storage = storage ?? SharedPreferencesSessionStorage() {
+    unawaited(_hydrateRecords());
+  }
 
   static const List<SessionPreset> presets = [
     SessionPreset(focusMinutes: 25, breakMinutes: 5, label: '25/5'),
     SessionPreset(focusMinutes: 50, breakMinutes: 10, label: '50/10'),
     SessionPreset(focusMinutes: 1, breakMinutes: 1, label: 'custom'),
   ];
+  static const String customPresetLabel = 'custom';
+  static const int minCustomFocusMinutes = 1;
+  static const int maxCustomFocusMinutes = 180;
+  static const int minCustomBreakMinutes = 1;
+  static const int maxCustomBreakMinutes = 60;
 
   final List<SessionRecord> _records = [];
   SessionPreset _selectedPreset;
   SessionRunState _runState;
   Timer? _timer;
   final DateTime Function() _now;
+  final SessionStorage _storage;
+  bool _disposed = false;
+  SessionPreset? _configuredCustomPreset;
+  String _pendingSessionTitle = '';
 
   SessionPreset get selectedPreset => _selectedPreset;
   SessionRunState get runState => _runState;
   List<SessionRecord> get records => List.unmodifiable(_records);
+  String get pendingSessionTitle => _pendingSessionTitle;
+  bool get isCustomSelected => _isCustomPreset(_selectedPreset);
+  bool get isCustomConfigured => _configuredCustomPreset != null;
+  bool get canStartSession => !isCustomSelected || isCustomConfigured;
+  String? get startGuardrailMessage {
+    if (!canStartSession) {
+      return 'Set custom minutes to start.';
+    }
+    return null;
+  }
+
+  int? get configuredCustomFocusMinutes =>
+      _configuredCustomPreset?.focusMinutes;
+  int? get configuredCustomBreakMinutes =>
+      _configuredCustomPreset?.breakMinutes;
 
   int get currentFocusRemainingSeconds {
     if (_runState.phase == SessionPhase.focus &&
@@ -146,29 +163,108 @@ class SessionController extends ChangeNotifier {
     return _runState.breakRemainingSeconds;
   }
 
-  static String formatClock(int totalSeconds) {
-    final int minutes = totalSeconds ~/ 60;
-    final int seconds = totalSeconds % 60;
+  int get actualFocusElapsedSeconds {
+    final int planned = _runState.preset.focusSeconds;
+    final int remaining = _runState.phase == SessionPhase.focus
+        ? currentFocusRemainingSeconds
+        : _runState.focusRemainingSeconds;
+    return max(0, planned - remaining);
+  }
+
+  int get actualBreakElapsedSeconds {
+    final int planned = _runState.preset.breakSeconds;
+    final int remaining = _runState.phase == SessionPhase.breakTime
+        ? currentBreakRemainingSeconds
+        : _runState.breakRemainingSeconds;
+    return max(0, planned - remaining);
+  }
+
+  static String formatDurationMMSS(int totalSeconds) {
+    final int normalized = max(0, totalSeconds);
+    final int minutes = normalized ~/ 60;
+    final int seconds = normalized % 60;
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  static String formatClock(int totalSeconds) {
+    return formatDurationMMSS(totalSeconds);
+  }
+
+  static String displayTitle(String? title) {
+    final String normalized = title?.trim() ?? '';
+    return normalized.isEmpty ? 'Untitled' : normalized;
+  }
+
+  String presetDisplayLabel(SessionPreset preset) {
+    if (!_isCustomPreset(preset)) {
+      return preset.label;
+    }
+    if (_configuredCustomPreset == null) {
+      return customPresetLabel;
+    }
+    return 'Custom (${_configuredCustomPreset!.focusMinutes}/${_configuredCustomPreset!.breakMinutes})';
+  }
+
+  void selectCustomPreset(int focusMinutes, int breakMinutes) {
+    if (_runState.phase != SessionPhase.idle) {
+      return;
+    }
+    final SessionPreset configured = SessionPreset(
+      focusMinutes: focusMinutes.clamp(
+        minCustomFocusMinutes,
+        maxCustomFocusMinutes,
+      ),
+      breakMinutes: breakMinutes.clamp(
+        minCustomBreakMinutes,
+        maxCustomBreakMinutes,
+      ),
+      label: customPresetLabel,
+    );
+    _configuredCustomPreset = configured;
+    _selectedPreset = configured;
+    _runState = SessionRunState.idle(preset: configured);
+    _safeNotifyListeners();
+  }
+
+  Future<void> _hydrateRecords() async {
+    final List<SessionRecord> loaded = await _storage.loadRecords();
+    _records
+      ..clear()
+      ..addAll(loaded);
+    _safeNotifyListeners();
+  }
+
+  Future<void> _persistRecords() async {
+    await _storage.saveRecords(_records);
   }
 
   void selectPreset(SessionPreset preset) {
     if (_runState.phase != SessionPhase.idle) {
       return;
     }
-    _selectedPreset = preset;
-    _runState = SessionRunState.idle(preset: preset);
-    notifyListeners();
+    if (_isCustomPreset(preset) && _configuredCustomPreset != null) {
+      _selectedPreset = _configuredCustomPreset!;
+    } else {
+      _selectedPreset = preset;
+    }
+    _runState = SessionRunState.idle(preset: _selectedPreset);
+    _safeNotifyListeners();
   }
 
-  void startSession() {
-    if (_runState.phase != SessionPhase.idle) {
+  void updatePendingSessionTitle(String value) {
+    _pendingSessionTitle = value;
+  }
+
+  void startSession({String? title}) {
+    if (_runState.phase != SessionPhase.idle || !canStartSession) {
       return;
     }
     final DateTime now = _now();
+    final String normalizedTitle = (title ?? _pendingSessionTitle).trim();
     _runState = SessionRunState(
       preset: _selectedPreset,
       phase: SessionPhase.focus,
+      sessionTitle: normalizedTitle.isEmpty ? null : normalizedTitle,
       focusRemainingSeconds: _selectedPreset.focusSeconds,
       breakRemainingSeconds: _selectedPreset.breakSeconds,
       phaseStartedAt: now,
@@ -176,7 +272,50 @@ class SessionController extends ChangeNotifier {
       endedAt: null,
     );
     _startTicker();
-    notifyListeners();
+    _safeNotifyListeners();
+  }
+
+  void handleAppBackgrounded() {
+    _timer?.cancel();
+  }
+
+  void handleAppResumed() {
+    if (_runState.phase == SessionPhase.focus) {
+      final int remaining = currentFocusRemainingSeconds;
+      if (remaining <= 0) {
+        _completeSession();
+        return;
+      }
+      _runState = _runState.copyWith(
+        focusRemainingSeconds: remaining,
+        phaseStartedAt: _now(),
+      );
+      _ensureTickerRunning();
+      _safeNotifyListeners();
+      return;
+    }
+
+    if (_runState.phase == SessionPhase.breakTime) {
+      final int remaining = currentBreakRemainingSeconds;
+      if (remaining <= 0) {
+        _runState = _runState.copyWith(
+          breakRemainingSeconds: 0,
+          phaseStartedAt: _now(),
+        );
+        _timer?.cancel();
+        _safeNotifyListeners();
+        return;
+      }
+      _runState = _runState.copyWith(
+        breakRemainingSeconds: remaining,
+        phaseStartedAt: _now(),
+      );
+      _ensureTickerRunning();
+      _safeNotifyListeners();
+      return;
+    }
+
+    _safeNotifyListeners();
   }
 
   void pauseForBreak() {
@@ -199,7 +338,7 @@ class SessionController extends ChangeNotifier {
       phaseStartedAt: now,
     );
     _startTicker();
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   void resumeFocus() {
@@ -222,7 +361,7 @@ class SessionController extends ChangeNotifier {
       phaseStartedAt: now,
     );
     _startTicker();
-    notifyListeners();
+    _safeNotifyListeners();
   }
 
   void saveAndReset() {
@@ -232,17 +371,25 @@ class SessionController extends ChangeNotifier {
     final DateTime now = _now();
     _records.add(
       SessionRecord(
+        title: _runState.sessionTitle,
         startedAt: _runState.startedAt ?? now,
         endedAt: _runState.endedAt ?? now,
-        presetLabel: _runState.preset.label,
+        presetLabel: presetDisplayLabel(_runState.preset),
         plannedFocus: _runState.preset.focusMinutes,
         plannedBreak: _runState.preset.breakMinutes,
+        actualFocusSeconds: actualFocusElapsedSeconds,
+        actualBreakSeconds: actualBreakElapsedSeconds,
         completed: true,
       ),
     );
+    unawaited(_persistRecords());
     _timer?.cancel();
     _runState = SessionRunState.idle(preset: _selectedPreset);
-    notifyListeners();
+    _safeNotifyListeners();
+  }
+
+  bool _isCustomPreset(SessionPreset preset) {
+    return preset.label == customPresetLabel;
   }
 
   int _computeRemaining(int baseRemaining, DateTime startedAt) {
@@ -262,6 +409,13 @@ class SessionController extends ChangeNotifier {
 
   void _startTicker() {
     _timer?.cancel();
+    _ensureTickerRunning();
+  }
+
+  void _ensureTickerRunning() {
+    if (_timer?.isActive ?? false) {
+      return;
+    }
     _timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
   }
 
@@ -271,7 +425,7 @@ class SessionController extends ChangeNotifier {
         _completeSession();
         return;
       }
-      notifyListeners();
+      _safeNotifyListeners();
       return;
     }
 
@@ -282,10 +436,10 @@ class SessionController extends ChangeNotifier {
           phaseStartedAt: _now(),
         );
         _timer?.cancel();
-        notifyListeners();
+        _safeNotifyListeners();
         return;
       }
-      notifyListeners();
+      _safeNotifyListeners();
       return;
     }
 
@@ -300,11 +454,18 @@ class SessionController extends ChangeNotifier {
       clearPhaseStartedAt: true,
       endedAt: _now(),
     );
-    notifyListeners();
+    _safeNotifyListeners();
+  }
+
+  void _safeNotifyListeners() {
+    if (!_disposed) {
+      notifyListeners();
+    }
   }
 
   @override
   void dispose() {
+    _disposed = true;
     _timer?.cancel();
     super.dispose();
   }

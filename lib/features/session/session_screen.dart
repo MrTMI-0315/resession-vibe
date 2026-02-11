@@ -23,6 +23,7 @@ class SessionScreen extends StatelessWidget {
       onCtaPressed: controller.pauseForBreak,
       presets: SessionController.presets,
       selectedPreset: state.preset,
+      presetLabelBuilder: controller.presetDisplayLabel,
     );
   }
 }

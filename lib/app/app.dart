@@ -15,7 +15,8 @@ class ResessionApp extends StatefulWidget {
   State<ResessionApp> createState() => _ResessionAppState();
 }
 
-class _ResessionAppState extends State<ResessionApp> {
+class _ResessionAppState extends State<ResessionApp>
+    with WidgetsBindingObserver {
   late final SessionController _controller;
   late final bool _ownsController;
 
@@ -24,14 +25,31 @@ class _ResessionAppState extends State<ResessionApp> {
     super.initState();
     _controller = widget.controller ?? SessionController();
     _ownsController = widget.controller == null;
+    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     if (_ownsController) {
       _controller.dispose();
     }
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _controller.handleAppResumed();
+      return;
+    }
+
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden ||
+        state == AppLifecycleState.detached) {
+      _controller.handleAppBackgrounded();
+    }
   }
 
   @override

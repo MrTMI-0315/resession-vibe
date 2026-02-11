@@ -8,11 +8,13 @@ class PresetSelector extends StatelessWidget {
     required this.presets,
     required this.selectedPreset,
     this.onSelected,
+    this.labelBuilder,
   });
 
   final List<SessionPreset> presets;
   final SessionPreset selectedPreset;
   final ValueChanged<SessionPreset>? onSelected;
+  final String Function(SessionPreset)? labelBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +31,9 @@ class PresetSelector extends StatelessWidget {
               (SessionPreset preset) => Expanded(
                 child: _PresetPill(
                   key: ValueKey<String>('preset-${preset.label}'),
-                  preset: preset,
+                  label: labelBuilder == null
+                      ? preset.label
+                      : labelBuilder!(preset),
                   selected: preset.label == selectedPreset.label,
                   onTap: onSelected == null ? null : () => onSelected!(preset),
                 ),
@@ -44,12 +48,12 @@ class PresetSelector extends StatelessWidget {
 class _PresetPill extends StatelessWidget {
   const _PresetPill({
     super.key,
-    required this.preset,
+    required this.label,
     required this.selected,
     required this.onTap,
   });
 
-  final SessionPreset preset;
+  final String label;
   final bool selected;
   final VoidCallback? onTap;
 
@@ -57,23 +61,50 @@ class _PresetPill extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 2),
-      child: Material(
-        color: selected ? const Color(0xFFE8E7E5) : Colors.transparent,
-        borderRadius: BorderRadius.circular(999),
-        child: InkWell(
+      child: Container(
+        decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(999),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: Center(
-              child: Text(
-                preset.label,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                  color: selected
-                      ? const Color(0xFF111111)
-                      : const Color(0xFFB7B7B7),
+          border: Border.all(
+            color: selected ? const Color(0xFF6A6A6A) : Colors.transparent,
+          ),
+        ),
+        child: Material(
+          color: selected ? const Color(0xFFE8E7E5) : Colors.transparent,
+          borderRadius: BorderRadius.circular(999),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(999),
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Center(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (selected)
+                      Icon(
+                        Icons.check,
+                        key: ValueKey<String>('preset-check-$label'),
+                        size: 14,
+                        color: const Color(0xFF111111),
+                      ),
+                    if (selected) const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: selected
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                          color: selected
+                              ? const Color(0xFF111111)
+                              : const Color(0xFFB7B7B7),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
