@@ -110,6 +110,7 @@ class SessionController extends ChangeNotifier {
   static const int maxCustomFocusMinutes = 180;
   static const int minCustomBreakMinutes = 1;
   static const int maxCustomBreakMinutes = 60;
+  static const int historyInsightWindowSize = 7;
   static const List<String> driftCategories = <String>[
     '알림',
     '딴생각',
@@ -194,6 +195,53 @@ class SessionController extends ChangeNotifier {
 
   String? get currentLastDriftCategory {
     return summarizeLastDriftCategory(_runState.driftEvents);
+  }
+
+  String get historyAverageFocusInsight {
+    final List<SessionRecord> recent = _historyInsightRecords;
+    if (recent.isEmpty) {
+      return 'Average Focus (last $historyInsightWindowSize): 00:00';
+    }
+
+    final int focusSum = recent.fold<int>(
+      0,
+      (int total, SessionRecord item) => total + item.actualFocusSeconds,
+    );
+    final int averageFocus = focusSum ~/ recent.length;
+    return 'Average Focus (last $historyInsightWindowSize): ${formatDurationMMSS(averageFocus)}';
+  }
+
+  String get historyTopDriftInsight {
+    final List<SessionRecord> recent = _historyInsightRecords;
+    final Map<String, int> counts = <String, int>{};
+
+    for (final SessionRecord record in recent) {
+      for (final DriftEvent drift in record.drifts) {
+        counts[drift.category] = (counts[drift.category] ?? 0) + 1;
+      }
+    }
+
+    if (counts.isEmpty) {
+      return 'Top Drift (last $historyInsightWindowSize): none';
+    }
+
+    String? topCategory;
+    int topCount = -1;
+    for (final MapEntry<String, int> entry in counts.entries) {
+      if (entry.value > topCount) {
+        topCategory = entry.key;
+        topCount = entry.value;
+        continue;
+      }
+
+      if (entry.value == topCount &&
+          topCategory != null &&
+          entry.key.compareTo(topCategory) < 0) {
+        topCategory = entry.key;
+      }
+    }
+
+    return 'Top Drift (last $historyInsightWindowSize): ${topCategory!} ($topCount)';
   }
 
   static String formatDurationMMSS(int totalSeconds) {
@@ -447,6 +495,10 @@ class SessionController extends ChangeNotifier {
 
   int _computeRemaining(int baseRemaining, DateTime startedAt) {
     return baseRemaining - _now().difference(startedAt).inSeconds;
+  }
+
+  List<SessionRecord> get _historyInsightRecords {
+    return _records.reversed.take(historyInsightWindowSize).toList();
   }
 
   int _computeRemainingAt(

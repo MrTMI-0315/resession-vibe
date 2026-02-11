@@ -33,7 +33,7 @@ class HistoryScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _InsightHeader(records: records),
+                _InsightHeader(controller: controller),
                 const SizedBox(height: 12),
                 Expanded(
                   child: records.isEmpty
@@ -66,30 +66,27 @@ class HistoryScreen extends StatelessWidget {
 }
 
 class _InsightHeader extends StatelessWidget {
-  const _InsightHeader({required this.records});
+  const _InsightHeader({required this.controller});
 
-  final List<SessionRecord> records;
+  final SessionController controller;
 
   @override
   Widget build(BuildContext context) {
-    if (records.isEmpty) {
-      return const Text(
-        'Insight: no data yet.',
-        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-      );
-    }
-
-    final List<SessionRecord> recent = records.take(7).toList();
-    final int focusSum = recent.fold<int>(
-      0,
-      (int total, SessionRecord item) => total + item.actualFocusSeconds,
-    );
-    final int avgFocus = focusSum ~/ recent.length;
-
-    return Text(
-      'Average Focus (last ${recent.length}): ${SessionController.formatDurationMMSS(avgFocus)}',
-      key: const ValueKey<String>('history-insight'),
-      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          controller.historyAverageFocusInsight,
+          key: const ValueKey<String>('history-insight-average'),
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          controller.historyTopDriftInsight,
+          key: const ValueKey<String>('history-insight-top-drift'),
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        ),
+      ],
     );
   }
 }

@@ -437,14 +437,78 @@ void main() {
 
     expect(find.text('History'), findsOneWidget);
     expect(
-      find.byKey(const ValueKey<String>('history-insight')),
+      find.byKey(const ValueKey<String>('history-insight-average')),
       findsOneWidget,
     );
-    expect(find.text('Average Focus (last 2): 01:00'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey<String>('history-insight-top-drift')),
+      findsOneWidget,
+    );
+    expect(find.text('Average Focus (last 7): 01:00'), findsOneWidget);
+    expect(find.text('Top Drift (last 7): none'), findsOneWidget);
     expect(find.text('Untitled'), findsOneWidget);
     expect(find.text('Deep work'), findsOneWidget);
     expect(find.text('Focus: 00:45'), findsOneWidget);
     expect(find.text('Break: 00:15'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    controller.dispose();
+  });
+
+  testWidgets('History top drift insight shows deterministic tie-break', (
+    WidgetTester tester,
+  ) async {
+    final InMemorySessionStorage storage = InMemorySessionStorage([
+      SessionRecord(
+        title: 'One',
+        startedAt: DateTime(2026, 1, 1, 9, 0, 0),
+        endedAt: DateTime(2026, 1, 1, 9, 10, 0),
+        presetLabel: '25/5',
+        plannedFocus: 25,
+        plannedBreak: 5,
+        actualFocusSeconds: 60,
+        actualBreakSeconds: 10,
+        completed: true,
+        drifts: const [
+          DriftEvent(atEpochMs: 1, category: 'A'),
+          DriftEvent(atEpochMs: 2, category: 'B'),
+        ],
+      ),
+      SessionRecord(
+        title: 'Two',
+        startedAt: DateTime(2026, 1, 1, 10, 0, 0),
+        endedAt: DateTime(2026, 1, 1, 10, 10, 0),
+        presetLabel: '25/5',
+        plannedFocus: 25,
+        plannedBreak: 5,
+        actualFocusSeconds: 70,
+        actualBreakSeconds: 20,
+        completed: true,
+        drifts: const [DriftEvent(atEpochMs: 3, category: 'B')],
+      ),
+      SessionRecord(
+        title: 'Three',
+        startedAt: DateTime(2026, 1, 1, 11, 0, 0),
+        endedAt: DateTime(2026, 1, 1, 11, 10, 0),
+        presetLabel: '25/5',
+        plannedFocus: 25,
+        plannedBreak: 5,
+        actualFocusSeconds: 80,
+        actualBreakSeconds: 30,
+        completed: true,
+        drifts: const [DriftEvent(atEpochMs: 4, category: 'A')],
+      ),
+    ]);
+
+    final SessionController controller = SessionController(storage: storage);
+
+    await tester.pumpWidget(ResessionApp(controller: controller));
+    await tester.pump();
+
+    await tester.tap(find.byKey(const ValueKey<String>('history-nav-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Top Drift (last 7): A (2)'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
     controller.dispose();
