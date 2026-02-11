@@ -402,6 +402,7 @@ void main() {
   testWidgets('History shows records in mm:ss with insight', (
     WidgetTester tester,
   ) async {
+    final _TestClock clock = _TestClock(DateTime(2026, 1, 1, 12, 0, 0));
     final InMemorySessionStorage storage = InMemorySessionStorage([
       SessionRecord(
         title: null,
@@ -427,7 +428,10 @@ void main() {
       ),
     ]);
 
-    final SessionController controller = SessionController(storage: storage);
+    final SessionController controller = SessionController(
+      storage: storage,
+      nowProvider: () => clock.now,
+    );
 
     await tester.pumpWidget(ResessionApp(controller: controller));
     await tester.pump();
@@ -437,6 +441,10 @@ void main() {
 
     expect(find.text('History'), findsOneWidget);
     expect(
+      find.byKey(const ValueKey<String>('history-insight-today')),
+      findsOneWidget,
+    );
+    expect(
       find.byKey(const ValueKey<String>('history-insight-average')),
       findsOneWidget,
     );
@@ -444,12 +452,48 @@ void main() {
       find.byKey(const ValueKey<String>('history-insight-top-drift')),
       findsOneWidget,
     );
+    expect(find.text('Today Total Focus: 02:00'), findsOneWidget);
     expect(find.text('Average Focus (last 7): 01:00'), findsOneWidget);
     expect(find.text('Top Drift (last 7): none'), findsOneWidget);
     expect(find.text('Untitled'), findsOneWidget);
     expect(find.text('Deep work'), findsOneWidget);
     expect(find.text('Focus: 00:45'), findsOneWidget);
     expect(find.text('Break: 00:15'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    controller.dispose();
+  });
+
+  testWidgets('History today focus excludes previous day records', (
+    WidgetTester tester,
+  ) async {
+    final _TestClock clock = _TestClock(DateTime(2026, 1, 2, 9, 0, 0));
+    final InMemorySessionStorage storage = InMemorySessionStorage([
+      SessionRecord(
+        title: 'Yesterday',
+        startedAt: DateTime(2026, 1, 1, 10, 0, 0),
+        endedAt: DateTime(2026, 1, 1, 10, 30, 0),
+        presetLabel: '25/5',
+        plannedFocus: 25,
+        plannedBreak: 5,
+        actualFocusSeconds: 600,
+        actualBreakSeconds: 60,
+        completed: true,
+      ),
+    ]);
+
+    final SessionController controller = SessionController(
+      storage: storage,
+      nowProvider: () => clock.now,
+    );
+
+    await tester.pumpWidget(ResessionApp(controller: controller));
+    await tester.pump();
+
+    await tester.tap(find.byKey(const ValueKey<String>('history-nav-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Today Total Focus: 00:00'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
     controller.dispose();

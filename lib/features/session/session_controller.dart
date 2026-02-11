@@ -211,6 +211,22 @@ class SessionController extends ChangeNotifier {
     return 'Average Focus (last $historyInsightWindowSize): ${formatDurationMMSS(averageFocus)}';
   }
 
+  String get historyTodayTotalFocusInsight {
+    final DateTime now = _now();
+    final DateTime todayStart = DateTime(now.year, now.month, now.day);
+    final DateTime todayEnd = todayStart.add(const Duration(days: 1));
+
+    int totalFocusSeconds = 0;
+    for (final SessionRecord record in _records) {
+      final DateTime recordTime = _recordTimestampForToday(record);
+      if (!recordTime.isBefore(todayStart) && recordTime.isBefore(todayEnd)) {
+        totalFocusSeconds += record.actualFocusSeconds;
+      }
+    }
+
+    return 'Today Total Focus: ${formatDurationMMSS(totalFocusSeconds)}';
+  }
+
   String get historyTopDriftInsight {
     final List<SessionRecord> recent = _historyInsightRecords;
     final Map<String, int> counts = <String, int>{};
@@ -499,6 +515,12 @@ class SessionController extends ChangeNotifier {
 
   List<SessionRecord> get _historyInsightRecords {
     return _records.reversed.take(historyInsightWindowSize).toList();
+  }
+
+  DateTime _recordTimestampForToday(SessionRecord record) {
+    // SessionRecord currently always has startedAt; this is the primary
+    // timestamp for day-boundary aggregation.
+    return record.startedAt;
   }
 
   int _computeRemainingAt(
