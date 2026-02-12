@@ -13,6 +13,8 @@
 - Decision (MVP): Break 타이머가 0에 도달하면 사용자 입력 없이 자동으로 Focus로 복귀한다. (토글/A-B 없음)
 - 시간 계산: `phaseStartedAt + baseRemaining` 기반 getter(`currentFocusRemainingSeconds`, `currentBreakRemainingSeconds`).
 - 기록: `SessionRecord`를 `shared_preferences` 키 `resession_session_records_v1`로 저장/로드.
+- 활성 세션 상태(`resession_active_run_state_v1`)를 저장/복구해 재실행 후에도 phase/remaining 동기화를 유지한다.
+- Focus/BREAK 전환 알림은 로컬 알림으로 최소 1건씩 스케줄링되며, 권한 거부 시 무음(no-op)으로 degrade한다.
 - Session title: Home 입력(`지금 할 일(선택)`) -> Start 전달 -> Save 시 record 반영 -> End/History/Home Recent에 표시(미입력 시 `Untitled`).
 - History 화면: Home에서 진입 가능, 최신순 목록 + mm:ss(actual focus/break) + 최소 Insight(최근 최대 7개 평균 Focus) 표시.
 - 공통 UI: `session_template`, `session_status_card`, `preset_selector`, `primary_cta_button` 재사용.
@@ -22,6 +24,7 @@
 - iOS/Android 디바이스 실주행 검증은 보장하지 않으며, 현재 검증 경로는 macOS/Chrome 중심이다.
 - History/Insight는 최소 구현이며, 고급 통계(기간 필터, 추세, 완료율 분해)는 미구현이다.
 - 자동복귀는 MVP 결정이며, 사용자 선호 차이는 후속 사용자 테스트/데모 피드백으로 검증한다. (옵션 토글/A-B는 MVP 범위 밖)
+- iPhone 무선 디바이스가 현재 감지되지 않을 수 있어 실기기 스모크는 케이블 연결/잠금해제/Developer Mode 상태에 의존한다.
 
 ## How to Run / Test
 기준 경로:
@@ -39,15 +42,19 @@ flutter run -d chrome
 
 품질 게이트:
 ```bash
+flutter clean
+flutter pub get
 dart format .
 flutter analyze
 flutter test
+flutter build ios --debug --no-codesign
 ```
 
 작성 시점 근거 로그:
 - `flutter analyze`: No issues found!
-- `flutter test`: All tests passed! (10 tests)
+- `flutter test`: All tests passed! (18 tests)
 - `flutter run -d chrome --no-resident`: Application finished.
+- `flutter build ios --debug --no-codesign`: `Built build/ios/iphoneos/Runner.app`
 
 ## Workflow Rules (finish -> verify -> commit -> push)
 - 최소 변경 원칙: 요청 범위 밖 수정/리팩토링 금지.

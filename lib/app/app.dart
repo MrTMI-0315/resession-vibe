@@ -4,6 +4,7 @@ import '../features/home/home_screen.dart';
 import '../features/session/break_screen.dart';
 import '../features/session/end_screen.dart';
 import '../features/session/session_controller.dart';
+import '../features/session/session_notifications.dart';
 import '../features/session/session_screen.dart';
 
 class ResessionApp extends StatefulWidget {
@@ -23,7 +24,9 @@ class _ResessionAppState extends State<ResessionApp>
   @override
   void initState() {
     super.initState();
-    _controller = widget.controller ?? SessionController();
+    _controller =
+        widget.controller ??
+        SessionController(notifications: LocalSessionNotificationService());
     _ownsController = widget.controller == null;
     WidgetsBinding.instance.addObserver(this);
   }

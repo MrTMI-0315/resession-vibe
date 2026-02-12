@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:resession/app/app.dart';
 import 'package:resession/features/session/session_controller.dart';
+import 'package:resession/features/session/session_notifications.dart';
 import 'package:resession/features/session/session_record.dart';
 import 'package:resession/features/session/session_storage.dart';
 
@@ -13,6 +14,32 @@ class _TestClock {
 
   void advance(Duration duration) {
     now = now.add(duration);
+  }
+}
+
+class _FakeNotificationService implements SessionNotificationService {
+  int initializeCalls = 0;
+  int cancelCalls = 0;
+  final List<String> scheduledEvents = <String>[];
+
+  @override
+  Future<void> initialize() async {
+    initializeCalls += 1;
+  }
+
+  @override
+  Future<void> scheduleBreakToFocus({required int inSeconds}) async {
+    scheduledEvents.add('break:$inSeconds');
+  }
+
+  @override
+  Future<void> scheduleFocusToBreak({required int inSeconds}) async {
+    scheduledEvents.add('focus:$inSeconds');
+  }
+
+  @override
+  Future<void> cancelAll() async {
+    cancelCalls += 1;
   }
 }
 
@@ -195,6 +222,79 @@ void main() {
 
     await tester.pumpWidget(const SizedBox.shrink());
     controller.dispose();
+  });
+
+  testWidgets('Notification schedule updates across focus and break phases', (
+    WidgetTester tester,
+  ) async {
+    final _TestClock clock = _TestClock(DateTime(2026, 1, 1, 0, 0, 0));
+    final _FakeNotificationService notifications = _FakeNotificationService();
+    final SessionController controller = SessionController(
+      nowProvider: () => clock.now,
+      storage: InMemorySessionStorage(),
+      notifications: notifications,
+    );
+    controller.selectCustomPreset(1, 1);
+
+    await tester.pumpWidget(ResessionApp(controller: controller));
+    await tester.pump();
+
+    await tester.tap(find.text('Start session'));
+    await tester.pump();
+    expect(notifications.scheduledEvents.last, 'focus:60');
+
+    await tester.tap(find.text('Pause'));
+    await tester.pump();
+    expect(notifications.scheduledEvents.last, 'break:60');
+
+    clock.advance(const Duration(seconds: 61));
+    await tester.pump(const Duration(seconds: 61));
+    expect(controller.runState.phase, SessionPhase.focus);
+    expect(notifications.scheduledEvents.last, 'focus:60');
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    controller.dispose();
+  });
+
+  testWidgets('Active session restores after controller recreation', (
+    WidgetTester tester,
+  ) async {
+    final _TestClock clock = _TestClock(DateTime(2026, 1, 1, 0, 0, 0));
+    final InMemorySessionStorage storage = InMemorySessionStorage();
+
+    final SessionController firstController = SessionController(
+      nowProvider: () => clock.now,
+      storage: storage,
+      notifications: NoopSessionNotificationService(),
+    );
+    firstController.selectCustomPreset(1, 1);
+    firstController.startSession();
+
+    await tester.pumpWidget(ResessionApp(controller: firstController));
+    await tester.pump();
+    await tester.pumpWidget(const SizedBox.shrink());
+    firstController.dispose();
+
+    clock.advance(const Duration(seconds: 30));
+
+    final SessionController secondController = SessionController(
+      nowProvider: () => clock.now,
+      storage: storage,
+      notifications: NoopSessionNotificationService(),
+    );
+
+    await tester.pumpWidget(ResessionApp(controller: secondController));
+    await tester.pump();
+    await tester.pump();
+
+    expect(secondController.runState.phase, SessionPhase.focus);
+    expect(
+      secondController.currentFocusRemainingSeconds,
+      inInclusiveRange(29, 30),
+    );
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    secondController.dispose();
   });
 
   testWidgets('Drift bottom sheet logs category during focus', (

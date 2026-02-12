@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 
+import 'session_notifications.dart';
 import 'session_record.dart';
 import 'session_storage.dart';
 
@@ -92,12 +93,16 @@ class SessionRunState {
 }
 
 class SessionController extends ChangeNotifier {
-  SessionController({DateTime Function()? nowProvider, SessionStorage? storage})
-    : _selectedPreset = presets.first,
-      _runState = SessionRunState.idle(preset: presets.first),
-      _now = nowProvider ?? DateTime.now,
-      _storage = storage ?? SharedPreferencesSessionStorage() {
-    unawaited(_hydrateRecords());
+  SessionController({
+    DateTime Function()? nowProvider,
+    SessionStorage? storage,
+    SessionNotificationService? notifications,
+  }) : _selectedPreset = presets.first,
+       _runState = SessionRunState.idle(preset: presets.first),
+       _now = nowProvider ?? DateTime.now,
+       _storage = storage ?? SharedPreferencesSessionStorage(),
+       _notifications = notifications ?? NoopSessionNotificationService() {
+    unawaited(_bootstrap());
   }
 
   static const List<SessionPreset> presets = [
@@ -126,6 +131,7 @@ class SessionController extends ChangeNotifier {
   Timer? _timer;
   final DateTime Function() _now;
   final SessionStorage _storage;
+  final SessionNotificationService _notifications;
   bool _disposed = false;
   SessionPreset? _configuredCustomPreset;
   String _pendingSessionTitle = '';
@@ -327,7 +333,15 @@ class SessionController extends ChangeNotifier {
     _configuredCustomPreset = configured;
     _selectedPreset = configured;
     _runState = SessionRunState.idle(preset: configured);
+    _queuePersistActiveRun();
+    unawaited(_notifications.cancelAll());
     _safeNotifyListeners();
+  }
+
+  Future<void> _bootstrap() async {
+    await _notifications.initialize();
+    await _hydrateRecords();
+    await _hydrateActiveRun();
   }
 
   Future<void> _hydrateRecords() async {
@@ -338,8 +352,102 @@ class SessionController extends ChangeNotifier {
     _safeNotifyListeners();
   }
 
+  Future<void> _hydrateActiveRun() async {
+    final Map<String, dynamic>? raw = await _storage.loadActiveRun();
+    if (raw == null) {
+      return;
+    }
+
+    final SessionRunState? restored = _runStateFromJson(raw);
+    if (restored == null) {
+      await _storage.clearActiveRun();
+      return;
+    }
+
+    _selectedPreset = restored.preset;
+    _runState = restored;
+    _synchronizePhaseAfterResume();
+  }
+
   Future<void> _persistRecords() async {
     await _storage.saveRecords(_records);
+  }
+
+  Future<void> _persistActiveRun() async {
+    if (_runState.phase == SessionPhase.idle) {
+      await _storage.clearActiveRun();
+      return;
+    }
+    await _storage.saveActiveRun(_runStateToJson(_runState));
+  }
+
+  void _queuePersistActiveRun() {
+    unawaited(_persistActiveRun());
+  }
+
+  Map<String, dynamic> _runStateToJson(SessionRunState state) {
+    return <String, dynamic>{
+      'phase': state.phase.name,
+      'preset': <String, dynamic>{
+        'focusMinutes': state.preset.focusMinutes,
+        'breakMinutes': state.preset.breakMinutes,
+        'label': state.preset.label,
+      },
+      'sessionTitle': state.sessionTitle,
+      'focusRemainingSeconds': state.focusRemainingSeconds,
+      'breakRemainingSeconds': state.breakRemainingSeconds,
+      'phaseStartedAt': state.phaseStartedAt?.toIso8601String(),
+      'startedAt': state.startedAt?.toIso8601String(),
+      'endedAt': state.endedAt?.toIso8601String(),
+      'driftEvents': state.driftEvents
+          .map((DriftEvent event) => event.toJson())
+          .toList(growable: false),
+    };
+  }
+
+  SessionRunState? _runStateFromJson(Map<String, dynamic> json) {
+    try {
+      final Map<dynamic, dynamic> presetJson =
+          json['preset'] as Map<dynamic, dynamic>;
+      final SessionPreset preset = SessionPreset(
+        focusMinutes: (presetJson['focusMinutes'] as num).toInt(),
+        breakMinutes: (presetJson['breakMinutes'] as num).toInt(),
+        label: presetJson['label'] as String,
+      );
+      final String phaseName = json['phase'] as String;
+      final SessionPhase phase = SessionPhase.values.firstWhere(
+        (SessionPhase item) => item.name == phaseName,
+      );
+      final List<DriftEvent> drifts =
+          ((json['driftEvents'] as List<dynamic>?) ?? <dynamic>[])
+              .whereType<Map<dynamic, dynamic>>()
+              .map((Map<dynamic, dynamic> entry) {
+                return DriftEvent.fromJson(Map<String, dynamic>.from(entry));
+              })
+              .toList(growable: false);
+
+      return SessionRunState(
+        preset: preset,
+        phase: phase,
+        sessionTitle: json['sessionTitle'] as String?,
+        driftEvents: drifts,
+        focusRemainingSeconds: (json['focusRemainingSeconds'] as num).toInt(),
+        breakRemainingSeconds: (json['breakRemainingSeconds'] as num).toInt(),
+        phaseStartedAt: _parseDateTimeOrNull(json['phaseStartedAt']),
+        startedAt: _parseDateTimeOrNull(json['startedAt']),
+        endedAt: _parseDateTimeOrNull(json['endedAt']),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  DateTime? _parseDateTimeOrNull(dynamic raw) {
+    final String? value = raw as String?;
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+    return DateTime.parse(value);
   }
 
   void selectPreset(SessionPreset preset) {
@@ -352,6 +460,8 @@ class SessionController extends ChangeNotifier {
       _selectedPreset = preset;
     }
     _runState = SessionRunState.idle(preset: _selectedPreset);
+    _queuePersistActiveRun();
+    unawaited(_notifications.cancelAll());
     _safeNotifyListeners();
   }
 
@@ -377,6 +487,8 @@ class SessionController extends ChangeNotifier {
       endedAt: null,
     );
     _startTicker();
+    _queuePersistActiveRun();
+    _scheduleNotificationForCurrentPhase();
     _safeNotifyListeners();
   }
 
@@ -404,6 +516,7 @@ class SessionController extends ChangeNotifier {
         );
 
     _runState = _runState.copyWith(driftEvents: nextDrifts);
+    _queuePersistActiveRun();
     _safeNotifyListeners();
   }
 
@@ -412,42 +525,7 @@ class SessionController extends ChangeNotifier {
   }
 
   void handleAppResumed() {
-    if (_runState.phase == SessionPhase.focus) {
-      final int remaining = currentFocusRemainingSeconds;
-      if (remaining <= 0) {
-        _completeSession();
-        return;
-      }
-      _runState = _runState.copyWith(
-        focusRemainingSeconds: remaining,
-        phaseStartedAt: _now(),
-      );
-      _ensureTickerRunning();
-      _safeNotifyListeners();
-      return;
-    }
-
-    if (_runState.phase == SessionPhase.breakTime) {
-      final int remaining = currentBreakRemainingSeconds;
-      if (remaining <= 0) {
-        _runState = _runState.copyWith(
-          breakRemainingSeconds: 0,
-          phaseStartedAt: _now(),
-        );
-        _timer?.cancel();
-        _safeNotifyListeners();
-        return;
-      }
-      _runState = _runState.copyWith(
-        breakRemainingSeconds: remaining,
-        phaseStartedAt: _now(),
-      );
-      _ensureTickerRunning();
-      _safeNotifyListeners();
-      return;
-    }
-
-    _safeNotifyListeners();
+    _synchronizePhaseAfterResume();
   }
 
   void pauseForBreak() {
@@ -470,6 +548,8 @@ class SessionController extends ChangeNotifier {
       phaseStartedAt: now,
     );
     _startTicker();
+    _queuePersistActiveRun();
+    _scheduleNotificationForCurrentPhase();
     _safeNotifyListeners();
   }
 
@@ -493,6 +573,8 @@ class SessionController extends ChangeNotifier {
       phaseStartedAt: now,
     );
     _startTicker();
+    _queuePersistActiveRun();
+    _scheduleNotificationForCurrentPhase();
     _safeNotifyListeners();
   }
 
@@ -518,6 +600,8 @@ class SessionController extends ChangeNotifier {
     unawaited(_persistRecords());
     _timer?.cancel();
     _runState = SessionRunState.idle(preset: _selectedPreset);
+    _queuePersistActiveRun();
+    unawaited(_notifications.cancelAll());
     _safeNotifyListeners();
   }
 
@@ -527,6 +611,55 @@ class SessionController extends ChangeNotifier {
 
   int _computeRemaining(int baseRemaining, DateTime startedAt) {
     return baseRemaining - _now().difference(startedAt).inSeconds;
+  }
+
+  void _synchronizePhaseAfterResume() {
+    if (_runState.phase == SessionPhase.focus) {
+      final int remaining = currentFocusRemainingSeconds;
+      if (remaining <= 0) {
+        _completeSession();
+        return;
+      }
+      _runState = _runState.copyWith(
+        focusRemainingSeconds: remaining,
+        phaseStartedAt: _now(),
+      );
+      _ensureTickerRunning();
+      _queuePersistActiveRun();
+      _scheduleNotificationForCurrentPhase();
+      _safeNotifyListeners();
+      return;
+    }
+
+    if (_runState.phase == SessionPhase.breakTime) {
+      final int remaining = currentBreakRemainingSeconds;
+      if (remaining <= 0) {
+        resumeFocus();
+        return;
+      }
+      _runState = _runState.copyWith(
+        breakRemainingSeconds: remaining,
+        phaseStartedAt: _now(),
+      );
+      _ensureTickerRunning();
+      _queuePersistActiveRun();
+      _scheduleNotificationForCurrentPhase();
+      _safeNotifyListeners();
+      return;
+    }
+
+    if (_runState.phase == SessionPhase.ended) {
+      _timer?.cancel();
+      unawaited(_notifications.cancelAll());
+      _queuePersistActiveRun();
+      _safeNotifyListeners();
+      return;
+    }
+
+    _timer?.cancel();
+    _queuePersistActiveRun();
+    unawaited(_notifications.cancelAll());
+    _safeNotifyListeners();
   }
 
   List<SessionRecord> get _historyInsightRecords {
@@ -548,6 +681,26 @@ class SessionController extends ChangeNotifier {
       return baseRemaining;
     }
     return baseRemaining - now.difference(startedAt).inSeconds;
+  }
+
+  void _scheduleNotificationForCurrentPhase() {
+    if (_runState.phase == SessionPhase.focus) {
+      unawaited(
+        _notifications.scheduleFocusToBreak(
+          inSeconds: currentFocusRemainingSeconds,
+        ),
+      );
+      return;
+    }
+    if (_runState.phase == SessionPhase.breakTime) {
+      unawaited(
+        _notifications.scheduleBreakToFocus(
+          inSeconds: currentBreakRemainingSeconds,
+        ),
+      );
+      return;
+    }
+    unawaited(_notifications.cancelAll());
   }
 
   void _startTicker() {
@@ -592,6 +745,8 @@ class SessionController extends ChangeNotifier {
       clearPhaseStartedAt: true,
       endedAt: _now(),
     );
+    _queuePersistActiveRun();
+    unawaited(_notifications.cancelAll());
     _safeNotifyListeners();
   }
 
@@ -605,6 +760,7 @@ class SessionController extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     _timer?.cancel();
+    unawaited(_notifications.cancelAll());
     super.dispose();
   }
 }
