@@ -784,6 +784,49 @@ void main() {
     },
   );
 
+  testWidgets(
+    'Drift newline and trim snapshot is identical across end, home, and history',
+    (WidgetTester tester) async {
+      final _TestClock clock = _TestClock(DateTime(2026, 1, 1, 15, 0, 0));
+      const String expectedSnapshot = 'Drift: 알림 (focus\ndrift)';
+
+      final SessionController controller = SessionController(
+        nowProvider: () => clock.now,
+        storage: InMemorySessionStorage(),
+      );
+      controller.selectCustomPreset(1, 1);
+
+      await tester.pumpWidget(ResessionApp(controller: controller));
+      await tester.pump();
+
+      await tester.tap(find.text('Start session'));
+      await tester.pump();
+
+      controller.logDrift(category: '  알림 ', note: '  focus\ndrift  ');
+      expect(controller.runState.driftEvents.length, 1);
+      await tester.pump();
+
+      clock.advance(const Duration(seconds: 65));
+      await tester.pump(const Duration(seconds: 65));
+
+      expect(find.text('End'), findsOneWidget);
+      expect(find.textContaining(expectedSnapshot), findsOneWidget);
+
+      await tester.tap(find.text('Log / Save'));
+      await tester.pump();
+      expect(find.textContaining(' • $expectedSnapshot'), findsOneWidget);
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('history-nav-button')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.textContaining(expectedSnapshot), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      controller.dispose();
+    },
+  );
+
   testWidgets('End screen shows session summary details', (
     WidgetTester tester,
   ) async {
