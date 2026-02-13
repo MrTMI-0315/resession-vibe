@@ -818,4 +818,35 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     controller.dispose();
   });
+
+  testWidgets('Session title clamps to 40 chars after whitespace normalization', (
+    WidgetTester tester,
+  ) async {
+    final SessionController controller = SessionController(
+      storage: InMemorySessionStorage(),
+      notifications: NoopSessionNotificationService(),
+    );
+    const String noisyTitle =
+        '  1234567890    1234567890    1234567890    1234567890    1234567890  ';
+    const String expected = '1234567890 1234567890 1234567890 1234567';
+
+    await tester.pumpWidget(ResessionApp(controller: controller));
+    await tester.pump();
+
+    await tester.enterText(
+      find.byKey(const ValueKey<String>('session-title-input')),
+      noisyTitle,
+    );
+    await tester.pump();
+
+    expect(controller.pendingSessionTitle, expected);
+    expect(controller.pendingSessionTitle.length, 40);
+
+    controller.startSession();
+    expect(controller.runState.sessionTitle, expected);
+    expect(controller.runState.sessionTitle?.length, 40);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    controller.dispose();
+  });
 }
