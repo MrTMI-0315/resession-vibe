@@ -552,6 +552,44 @@ void main() {
     secondController.dispose();
   });
 
+  testWidgets('Drift format is identical across end, home, and history', (
+    WidgetTester tester,
+  ) async {
+    final InMemorySessionStorage storage = InMemorySessionStorage();
+    final _TestClock clock = _TestClock(DateTime(2026, 1, 1, 10, 0, 0));
+    final String driftText = 'Drift: 환경 (focus drift)';
+
+    final SessionController controller = SessionController(
+      nowProvider: () => clock.now,
+      storage: storage,
+    );
+    controller.selectCustomPreset(1, 1);
+
+    await tester.pumpWidget(ResessionApp(controller: controller));
+    await tester.pump();
+
+    await tester.tap(find.text('Start session'));
+    await tester.pump();
+
+    controller.logDrift(category: '환경', note: 'focus drift');
+    clock.advance(const Duration(seconds: 65));
+    await tester.pump(const Duration(seconds: 65));
+
+    expect(find.text(driftText), findsOneWidget);
+
+    await tester.tap(find.text('Log / Save'));
+    await tester.pump();
+
+    expect(find.textContaining(' • $driftText'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey<String>('history-nav-button')));
+    await tester.pumpAndSettle();
+    expect(find.text(driftText), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    controller.dispose();
+  });
+
   testWidgets('End screen shows session summary details', (
     WidgetTester tester,
   ) async {
