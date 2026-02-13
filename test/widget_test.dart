@@ -474,11 +474,11 @@ void main() {
     clock.advance(const Duration(seconds: 65));
     await tester.pump(const Duration(seconds: 65));
 
-    expect(find.text('Last drift: 알림'), findsOneWidget);
+    expect(find.text('Drift: 알림'), findsOneWidget);
 
     await tester.tap(find.text('Log / Save'));
     await tester.pump();
-    expect(find.textContaining('Drift 알림'), findsOneWidget);
+    expect(find.textContaining('Drift: 알림'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
     firstController.dispose();
@@ -491,11 +491,62 @@ void main() {
     await tester.pumpWidget(ResessionApp(controller: secondController));
     await tester.pump();
 
-    expect(find.textContaining('Drift 알림'), findsOneWidget);
+    expect(find.textContaining('Drift: 알림'), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey<String>('history-nav-button')));
     await tester.pumpAndSettle();
     expect(find.text('Drift: 알림'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    secondController.dispose();
+  });
+
+  testWidgets('Drift note persists across end, home, and history', (
+    WidgetTester tester,
+  ) async {
+    final InMemorySessionStorage storage = InMemorySessionStorage();
+    final _TestClock clock = _TestClock(DateTime(2026, 1, 1, 9, 0, 0));
+
+    final SessionController firstController = SessionController(
+      nowProvider: () => clock.now,
+      storage: storage,
+    );
+    firstController.selectCustomPreset(1, 1);
+
+    await tester.pumpWidget(ResessionApp(controller: firstController));
+    await tester.pump();
+
+    await tester.tap(find.text('Start session'));
+    await tester.pump();
+
+    firstController.logDrift(category: '메신저', note: 'quick check');
+    expect(firstController.runState.driftEvents.length, 1);
+
+    clock.advance(const Duration(seconds: 65));
+    await tester.pump(const Duration(seconds: 65));
+
+    expect(find.text('Drift: 메신저 (quick check)'), findsOneWidget);
+
+    await tester.tap(find.text('Log / Save'));
+    await tester.pump();
+    expect(find.textContaining('Drift: 메신저 (quick check)'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    firstController.dispose();
+
+    final SessionController secondController = SessionController(
+      nowProvider: () => clock.now,
+      storage: storage,
+    );
+
+    await tester.pumpWidget(ResessionApp(controller: secondController));
+    await tester.pump();
+
+    expect(find.textContaining('Drift: 메신저 (quick check)'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey<String>('history-nav-button')));
+    await tester.pumpAndSettle();
+    expect(find.text('Drift: 메신저 (quick check)'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
     secondController.dispose();

@@ -219,10 +219,10 @@ class _RecordCard extends StatelessWidget {
             'Break: ${SessionController.formatDurationMMSS(record.actualBreakSeconds)}',
             style: const TextStyle(fontSize: 12),
           ),
-          if (SessionController.summarizeLastDriftCategory(record.drifts) !=
+          if (SessionController.summarizeLastDriftSummary(record.drifts) !=
               null)
             Text(
-              'Drift: ${SessionController.summarizeLastDriftCategory(record.drifts)}',
+              SessionController.summarizeLastDriftSummary(record.drifts)!,
               style: const TextStyle(fontSize: 12),
             ),
           Text(

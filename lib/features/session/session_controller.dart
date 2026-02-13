@@ -204,6 +204,10 @@ class SessionController extends ChangeNotifier {
     return summarizeLastDriftCategory(_runState.driftEvents);
   }
 
+  String? get currentLastDriftSummary {
+    return summarizeLastDriftSummary(_runState.driftEvents);
+  }
+
   String get historyAverageFocusInsight {
     final List<SessionRecord> recent = _historyInsightRecords;
     if (recent.isEmpty) {
@@ -344,6 +348,18 @@ class SessionController extends ChangeNotifier {
       return null;
     }
     return drifts.last.category;
+  }
+
+  static String? summarizeLastDriftSummary(List<DriftEvent> drifts) {
+    if (drifts.isEmpty) {
+      return null;
+    }
+
+    final DriftEvent last = drifts.last;
+    final String? note = last.note?.trim();
+    return note == null || note.isEmpty
+        ? 'Drift: ${last.category}'
+        : 'Drift: ${last.category} ($note)';
   }
 
   String presetDisplayLabel(SessionPreset preset) {
