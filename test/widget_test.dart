@@ -792,34 +792,28 @@ void main() {
     controller.dispose();
   });
 
-  testWidgets('Session title input is clamped to max length', (
+  testWidgets('Session title whitespace is normalized in UI and controller', (
     WidgetTester tester,
   ) async {
     final SessionController controller = SessionController(
       storage: InMemorySessionStorage(),
       notifications: NoopSessionNotificationService(),
     );
-    final String longTitle = 'A' * 120;
+    const String noisyTitle = '   deep    work   ';
 
     await tester.pumpWidget(ResessionApp(controller: controller));
     await tester.pump();
 
     await tester.enterText(
       find.byKey(const ValueKey<String>('session-title-input')),
-      longTitle,
+      noisyTitle,
     );
     await tester.pump();
 
-    expect(
-      controller.pendingSessionTitle.length,
-      SessionController.maxSessionTitleLength,
-    );
+    expect(controller.pendingSessionTitle, 'deep work');
 
     controller.startSession();
-    expect(
-      controller.runState.sessionTitle?.length,
-      SessionController.maxSessionTitleLength,
-    );
+    expect(controller.runState.sessionTitle, 'deep work');
 
     await tester.pumpWidget(const SizedBox.shrink());
     controller.dispose();

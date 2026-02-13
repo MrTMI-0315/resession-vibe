@@ -47,6 +47,19 @@ class HomeScreen extends StatelessWidget {
             key: const ValueKey<String>('session-title-input'),
             initialValue: controller.pendingSessionTitle,
             onChanged: controller.updatePendingSessionTitle,
+            inputFormatters: [
+              TextInputFormatter.withFunction((
+                TextEditingValue oldValue,
+                TextEditingValue newValue,
+              ) {
+                final String normalized =
+                    SessionController.normalizeSessionTitleInput(newValue.text);
+                return TextEditingValue(
+                  text: normalized,
+                  selection: TextSelection.collapsed(offset: normalized.length),
+                );
+              }),
+            ],
             maxLength: SessionController.maxSessionTitleLength,
             maxLengthEnforcement: MaxLengthEnforcement.enforced,
             decoration: InputDecoration(

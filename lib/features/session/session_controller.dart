@@ -295,12 +295,14 @@ class SessionController extends ChangeNotifier {
   }
 
   static String displayTitle(String? title) {
-    final String normalized = normalizeSessionTitleInput(title ?? '').trim();
+    final String normalized = normalizeSessionTitleInput(title ?? '');
     return normalized.isEmpty ? 'Untitled' : normalized;
   }
 
   static String normalizeSessionTitleInput(String value) {
-    final String normalizedWhitespace = value.replaceAll(RegExp(r'\s+'), ' ');
+    final String normalizedWhitespace = value
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
     if (normalizedWhitespace.length <= maxSessionTitleLength) {
       return normalizedWhitespace;
     }
@@ -485,7 +487,7 @@ class SessionController extends ChangeNotifier {
     final DateTime now = _now();
     final String normalizedTitle = normalizeSessionTitleInput(
       title ?? _pendingSessionTitle,
-    ).trim();
+    );
     _runState = SessionRunState(
       preset: _selectedPreset,
       phase: SessionPhase.focus,
