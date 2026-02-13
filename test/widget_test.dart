@@ -654,25 +654,60 @@ void main() {
   testWidgets('History filter state remains stable on long list scrolling', (
     WidgetTester tester,
   ) async {
-    final InMemorySessionStorage storage = InMemorySessionStorage(
-      List<SessionRecord>.generate(
-        30,
-        (int index) => SessionRecord(
-          title: 'Session ${index + 1}',
-          startedAt: DateTime(2026, 1, 1, 9, index, 0),
-          endedAt: DateTime(2026, 1, 1, 9, index, 30),
-          presetLabel: '25/5',
-          plannedFocus: 25,
-          plannedBreak: 5,
-          actualFocusSeconds: 1500,
-          actualBreakSeconds: 300,
-          completed: ((index + 1) % 3) != 0,
-        ),
+    const int totalSessions = 30;
+    const int recentWindow = 7;
+    final List<SessionRecord> records = List<SessionRecord>.generate(
+      totalSessions,
+      (int index) => SessionRecord(
+        title: 'Session ${index + 1}',
+        startedAt: DateTime(2026, 1, 1, 9, index, 0),
+        endedAt: DateTime(2026, 1, 1, 9, index, 30),
+        presetLabel: '25/5',
+        plannedFocus: 25,
+        plannedBreak: 5,
+        actualFocusSeconds: 1500,
+        actualBreakSeconds: 300,
+        completed: ((index + 1) % 3) != 0,
       ),
     );
+    final List<SessionRecord> newestFirst = records.reversed.toList();
+    final int allCompleted = records
+        .where((SessionRecord item) => item.completed)
+        .length;
+    final int recentCompleted = newestFirst
+        .take(recentWindow)
+        .where((SessionRecord item) => item.completed)
+        .length;
+
+    String completionRate(int completed, int total) {
+      if (total == 0) {
+        return '0% (0/0)';
+      }
+      final int rate = ((completed * 100) / total).round();
+      return '$rate% ($completed/$total)';
+    }
+
+    final InMemorySessionStorage storage = InMemorySessionStorage(records);
 
     final SessionController controller = SessionController(storage: storage);
     final Finder listFinder = find.byType(ListView);
+
+    Future<void> revealSession(String title) async {
+      for (int i = 0; i < 10; i++) {
+        if (find.text(title).evaluate().isNotEmpty) {
+          return;
+        }
+        await tester.drag(listFinder, const Offset(0, 300));
+        await tester.pumpAndSettle();
+      }
+      for (int i = 0; i < 10; i++) {
+        if (find.text(title).evaluate().isNotEmpty) {
+          return;
+        }
+        await tester.drag(listFinder, const Offset(0, -300));
+        await tester.pumpAndSettle();
+      }
+    }
 
     await tester.pumpWidget(ResessionApp(controller: controller));
     await tester.pump();
@@ -680,53 +715,83 @@ void main() {
     await tester.tap(find.byKey(const ValueKey<String>('history-nav-button')));
     await tester.pumpAndSettle();
     await tester.dragUntilVisible(
-      find.text('Session 30'),
+      find.text('Session $totalSessions'),
       listFinder,
       const Offset(0, 300),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Completion Rate (last 7): 57% (4/7)'), findsOneWidget);
-    expect(find.text('Session 30'), findsOneWidget);
+    expect(
+      find.text(
+        'Completion Rate (last 7): ${completionRate(recentCompleted, recentWindow)}',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Session $totalSessions'), findsOneWidget);
     expect(find.text('Session 1'), findsNothing);
+    await revealSession('Session ${totalSessions - recentWindow + 1}');
+    expect(
+      find.text('Session ${totalSessions - recentWindow + 1}'),
+      findsOneWidget,
+    );
+    expect(find.text('Session ${totalSessions - recentWindow}'), findsNothing);
 
-    await tester.tap(find.byKey(const ValueKey<String>('history-filter-all')));
-    await tester.pumpAndSettle();
-    expect(find.text('Completion Rate (all): 67% (20/30)'), findsOneWidget);
-
-    for (int i = 0; i < 6; i++) {
-      await tester.drag(listFinder, const Offset(0, -300));
+    for (int turn = 0; turn < 2; turn += 1) {
+      await tester.tap(
+        find.byKey(const ValueKey<String>('history-filter-all')),
+      );
       await tester.pumpAndSettle();
+      expect(
+        find.text(
+          'Completion Rate (all): ${completionRate(allCompleted, totalSessions)}',
+        ),
+        findsOneWidget,
+      );
+
+      for (int i = 0; i < 6; i++) {
+        await tester.drag(listFinder, const Offset(0, -300));
+        await tester.pumpAndSettle();
+      }
+
+      await tester.dragUntilVisible(
+        find.text('Session 1'),
+        listFinder,
+        const Offset(0, -300),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.text('Session 1'), findsOneWidget);
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('history-filter-recent-7')),
+      );
+      await tester.pumpAndSettle();
+      await revealSession('Session $totalSessions');
+      expect(
+        find.text(
+          'Completion Rate (last 7): ${completionRate(recentCompleted, recentWindow)}',
+        ),
+        findsOneWidget,
+      );
+      await tester.dragUntilVisible(
+        find.text('Session $totalSessions'),
+        listFinder,
+        const Offset(0, 300),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.text('Session 1'), findsNothing);
+      expect(find.text('Session $totalSessions'), findsOneWidget);
+      await revealSession('Session ${totalSessions - recentWindow + 1}');
+      expect(
+        find.text('Session ${totalSessions - recentWindow + 1}'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Session ${totalSessions - recentWindow}'),
+        findsNothing,
+      );
     }
-
-    await tester.dragUntilVisible(
-      find.text('Session 1'),
-      listFinder,
-      const Offset(0, -300),
-    );
-    await tester.pumpAndSettle();
-    expect(tester.takeException(), isNull);
-    expect(find.text('Session 1'), findsOneWidget);
-
-    await tester.tap(
-      find.byKey(const ValueKey<String>('history-filter-recent-7')),
-    );
-    await tester.pumpAndSettle();
-    await tester.dragUntilVisible(
-      find.text('Session 30'),
-      listFinder,
-      const Offset(0, 300),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('Completion Rate (last 7): 57% (4/7)'), findsOneWidget);
-    expect(find.text('Session 1'), findsNothing);
-    expect(find.text('Session 30'), findsOneWidget);
-
-    await tester.tap(find.byKey(const ValueKey<String>('history-filter-all')));
-    await tester.pumpAndSettle();
-    expect(find.text('Completion Rate (all): 67% (20/30)'), findsOneWidget);
-    expect(tester.takeException(), isNull);
 
     await tester.pumpWidget(const SizedBox.shrink());
     controller.dispose();
