@@ -643,6 +643,54 @@ void main() {
     controller.dispose();
   });
 
+  testWidgets(
+    'Drift empty and whitespace values render with stable formatting',
+    (WidgetTester tester) async {
+      final _TestClock clock = _TestClock(DateTime(2026, 1, 1, 12, 0, 0));
+      final SessionController controller = SessionController(
+        nowProvider: () => clock.now,
+        storage: InMemorySessionStorage(),
+      );
+      controller.selectCustomPreset(1, 1);
+
+      await tester.pumpWidget(ResessionApp(controller: controller));
+      await tester.pump();
+
+      await tester.tap(find.text('Start session'));
+      await tester.pump();
+
+      controller.logDrift(category: '   ', note: 'ignored');
+      clock.advance(const Duration(seconds: 10));
+      await tester.pump(const Duration(seconds: 10));
+      expect(
+        find.text('Drift: '),
+        findsNothing,
+        reason: 'blank category should not produce drift summary',
+      );
+
+      controller.logDrift(category: ' 알림 ', note: '   ');
+      expect(controller.runState.driftEvents.length, 1);
+
+      clock.advance(const Duration(seconds: 60));
+      await tester.pump(const Duration(seconds: 60));
+      expect(find.text('End'), findsOneWidget);
+      expect(find.text('Drift: 알림'), findsOneWidget);
+
+      await tester.tap(find.text('Log / Save'));
+      await tester.pump();
+      expect(find.textContaining(' • Drift: 알림'), findsOneWidget);
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('history-nav-button')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Drift: 알림'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      controller.dispose();
+    },
+  );
+
   testWidgets('End screen shows session summary details', (
     WidgetTester tester,
   ) async {
