@@ -937,6 +937,61 @@ void main() {
     },
   );
 
+  testWidgets(
+    'Drift blank note keeps formatted snapshot through end, home, and history',
+    (WidgetTester tester) async {
+      final InMemorySessionStorage storage = InMemorySessionStorage();
+      final _TestClock clock = _TestClock(DateTime(2026, 1, 1, 18, 0, 0));
+      const String expectedSnapshot = 'Drift: 알림';
+
+      final SessionController firstController = SessionController(
+        nowProvider: () => clock.now,
+        storage: storage,
+      );
+      firstController.selectCustomPreset(1, 1);
+
+      await tester.pumpWidget(ResessionApp(controller: firstController));
+      await tester.pump();
+
+      await tester.tap(find.text('Start session'));
+      await tester.pump();
+
+      firstController.logDrift(category: ' \n알림\n ', note: '   \n \t  ');
+      expect(firstController.runState.driftEvents.length, 1);
+
+      clock.advance(const Duration(seconds: 65));
+      await tester.pump(const Duration(seconds: 65));
+      expect(find.text('End'), findsOneWidget);
+      expect(find.text(expectedSnapshot), findsOneWidget);
+
+      await tester.tap(find.text('Log / Save'));
+      await tester.pump();
+      expect(find.textContaining(' • $expectedSnapshot'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      firstController.dispose();
+
+      final SessionController secondController = SessionController(
+        nowProvider: () => clock.now,
+        storage: storage,
+      );
+
+      await tester.pumpWidget(ResessionApp(controller: secondController));
+      await tester.pump();
+
+      expect(find.textContaining(' • $expectedSnapshot'), findsOneWidget);
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('history-nav-button')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text(expectedSnapshot), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      secondController.dispose();
+    },
+  );
+
   testWidgets('End screen shows session summary details', (
     WidgetTester tester,
   ) async {
