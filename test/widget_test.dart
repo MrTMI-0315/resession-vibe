@@ -590,6 +590,59 @@ void main() {
     controller.dispose();
   });
 
+  testWidgets('Drift note empty and empty history keep drift format stable', (
+    WidgetTester tester,
+  ) async {
+    final InMemorySessionStorage storage = InMemorySessionStorage();
+
+    final SessionController emptyHistoryController = SessionController(
+      storage: storage,
+    );
+    await tester.pumpWidget(ResessionApp(controller: emptyHistoryController));
+    await tester.pump();
+
+    await tester.tap(find.byKey(const ValueKey<String>('history-nav-button')));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey<String>('history-empty-state-message')),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Drift: '), findsNothing);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    emptyHistoryController.dispose();
+
+    final _TestClock clock = _TestClock(DateTime(2026, 1, 1, 11, 0, 0));
+    final SessionController controller = SessionController(
+      nowProvider: () => clock.now,
+      storage: storage,
+    );
+    controller.selectCustomPreset(1, 1);
+
+    await tester.pumpWidget(ResessionApp(controller: controller));
+    await tester.pump();
+
+    await tester.tap(find.text('Start session'));
+    await tester.pump();
+
+    controller.logDrift(category: '완벽주의', note: '   ');
+    clock.advance(const Duration(seconds: 65));
+    await tester.pump(const Duration(seconds: 65));
+
+    expect(find.text('Drift: 완벽주의'), findsOneWidget);
+
+    await tester.tap(find.text('Log / Save'));
+    await tester.pump();
+    expect(find.textContaining(' • Drift: 완벽주의'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey<String>('history-nav-button')));
+    await tester.pumpAndSettle();
+    expect(find.text('Drift: 완벽주의'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    controller.dispose();
+  });
+
   testWidgets('End screen shows session summary details', (
     WidgetTester tester,
   ) async {
