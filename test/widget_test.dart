@@ -651,6 +651,87 @@ void main() {
     controller.dispose();
   });
 
+  testWidgets('History filter state remains stable on long list scrolling', (
+    WidgetTester tester,
+  ) async {
+    final InMemorySessionStorage storage = InMemorySessionStorage(
+      List<SessionRecord>.generate(
+        30,
+        (int index) => SessionRecord(
+          title: 'Session ${index + 1}',
+          startedAt: DateTime(2026, 1, 1, 9, index, 0),
+          endedAt: DateTime(2026, 1, 1, 9, index, 30),
+          presetLabel: '25/5',
+          plannedFocus: 25,
+          plannedBreak: 5,
+          actualFocusSeconds: 1500,
+          actualBreakSeconds: 300,
+          completed: ((index + 1) % 3) != 0,
+        ),
+      ),
+    );
+
+    final SessionController controller = SessionController(storage: storage);
+    final Finder listFinder = find.byType(ListView);
+
+    await tester.pumpWidget(ResessionApp(controller: controller));
+    await tester.pump();
+
+    await tester.tap(find.byKey(const ValueKey<String>('history-nav-button')));
+    await tester.pumpAndSettle();
+    await tester.dragUntilVisible(
+      find.text('Session 30'),
+      listFinder,
+      const Offset(0, 300),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Completion Rate (last 7): 57% (4/7)'), findsOneWidget);
+    expect(find.text('Session 30'), findsOneWidget);
+    expect(find.text('Session 1'), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey<String>('history-filter-all')));
+    await tester.pumpAndSettle();
+    expect(find.text('Completion Rate (all): 67% (20/30)'), findsOneWidget);
+
+    for (int i = 0; i < 6; i++) {
+      await tester.drag(listFinder, const Offset(0, -300));
+      await tester.pumpAndSettle();
+    }
+
+    await tester.dragUntilVisible(
+      find.text('Session 1'),
+      listFinder,
+      const Offset(0, -300),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.text('Session 1'), findsOneWidget);
+
+    await tester.tap(
+      find.byKey(const ValueKey<String>('history-filter-recent-7')),
+    );
+    await tester.pumpAndSettle();
+    await tester.dragUntilVisible(
+      find.text('Session 30'),
+      listFinder,
+      const Offset(0, 300),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Completion Rate (last 7): 57% (4/7)'), findsOneWidget);
+    expect(find.text('Session 1'), findsNothing);
+    expect(find.text('Session 30'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey<String>('history-filter-all')));
+    await tester.pumpAndSettle();
+    expect(find.text('Completion Rate (all): 67% (20/30)'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    controller.dispose();
+  });
+
   testWidgets('History today focus excludes previous day records', (
     WidgetTester tester,
   ) async {
