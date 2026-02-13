@@ -283,6 +283,36 @@ class SessionController extends ChangeNotifier {
     return 'Top Drift (last $historyInsightWindowSize): ${topCategory!} ($topCount)';
   }
 
+  String historyCompletionRateInsight({int? window}) {
+    final List<SessionRecord> source = _recordsForCompletion(window);
+    if (window == null) {
+      return _formatCompletionRate(windowLabel: 'all', source: source);
+    }
+    return _formatCompletionRate(windowLabel: 'last $window', source: source);
+  }
+
+  List<SessionRecord> _recordsForCompletion(int? window) {
+    if (window == null) {
+      return List<SessionRecord>.from(_records);
+    }
+    return _records.reversed.take(window).toList();
+  }
+
+  String _formatCompletionRate({
+    required String windowLabel,
+    required List<SessionRecord> source,
+  }) {
+    final int total = source.length;
+    if (total == 0) {
+      return 'Completion Rate ($windowLabel): 0% (0/0)';
+    }
+    final int completed = source
+        .where((SessionRecord item) => item.completed)
+        .length;
+    final int rate = ((completed * 100) / total).round();
+    return 'Completion Rate ($windowLabel): $rate% ($completed/$total)';
+  }
+
   static String formatDurationMMSS(int totalSeconds) {
     final int normalized = max(0, totalSeconds);
     final int minutes = normalized ~/ 60;

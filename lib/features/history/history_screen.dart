@@ -3,18 +3,31 @@ import 'package:flutter/material.dart';
 import '../session/session_controller.dart';
 import '../session/session_record.dart';
 
-class HistoryScreen extends StatelessWidget {
+enum _HistoryFilterScope { all, recent7 }
+
+class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key, required this.controller});
 
   final SessionController controller;
 
   @override
+  State<HistoryScreen> createState() => _HistoryScreenState();
+}
+
+class _HistoryScreenState extends State<HistoryScreen> {
+  _HistoryFilterScope _filterScope = _HistoryFilterScope.recent7;
+
+  @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: controller,
+      animation: widget.controller,
       builder: (BuildContext context, _) {
-        final List<SessionRecord> records = controller.records.reversed
-            .toList();
+        final List<SessionRecord> records =
+            _filterScope == _HistoryFilterScope.recent7
+            ? widget.controller.records.reversed
+                  .take(SessionController.historyInsightWindowSize)
+                  .toList()
+            : widget.controller.records.reversed.toList();
 
         return Scaffold(
           backgroundColor: const Color(0xFF1C1D20),
@@ -33,7 +46,13 @@ class HistoryScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _InsightHeader(controller: controller),
+                _InsightHeader(
+                  controller: widget.controller,
+                  filterScope: _filterScope,
+                  onFilterScopeChanged: (_HistoryFilterScope nextScope) {
+                    setState(() => _filterScope = nextScope);
+                  },
+                ),
                 const SizedBox(height: 12),
                 Expanded(
                   child: records.isEmpty
@@ -66,9 +85,15 @@ class HistoryScreen extends StatelessWidget {
 }
 
 class _InsightHeader extends StatelessWidget {
-  const _InsightHeader({required this.controller});
+  const _InsightHeader({
+    required this.controller,
+    required this.filterScope,
+    required this.onFilterScopeChanged,
+  });
 
   final SessionController controller;
+  final _HistoryFilterScope filterScope;
+  final ValueChanged<_HistoryFilterScope> onFilterScopeChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -96,6 +121,35 @@ class _InsightHeader extends StatelessWidget {
         Text(
           controller.historyTopDriftInsight,
           key: const ValueKey<String>('history-insight-top-drift'),
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          children: <Widget>[
+            ChoiceChip(
+              key: const ValueKey<String>('history-filter-all'),
+              label: const Text('All'),
+              selected: filterScope == _HistoryFilterScope.all,
+              onSelected: (_) => onFilterScopeChanged(_HistoryFilterScope.all),
+            ),
+            ChoiceChip(
+              key: const ValueKey<String>('history-filter-recent-7'),
+              label: const Text('Recent 7'),
+              selected: filterScope == _HistoryFilterScope.recent7,
+              onSelected: (_) =>
+                  onFilterScopeChanged(_HistoryFilterScope.recent7),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          filterScope == _HistoryFilterScope.recent7
+              ? controller.historyCompletionRateInsight(
+                  window: SessionController.historyInsightWindowSize,
+                )
+              : controller.historyCompletionRateInsight(),
+          key: const ValueKey<String>('history-insight-completion-rate'),
           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
         ),
       ],

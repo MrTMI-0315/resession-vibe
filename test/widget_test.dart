@@ -603,6 +603,54 @@ void main() {
     controller.dispose();
   });
 
+  testWidgets('History completion insight and filter toggle', (
+    WidgetTester tester,
+  ) async {
+    final InMemorySessionStorage storage = InMemorySessionStorage(
+      List<SessionRecord>.generate(
+        8,
+        (int index) => SessionRecord(
+          title: 'Session ${index + 1}',
+          startedAt: DateTime(2026, 1, 1, 8, index, 0),
+          endedAt: DateTime(2026, 1, 1, 8, index, 30),
+          presetLabel: '25/5',
+          plannedFocus: 25,
+          plannedBreak: 5,
+          actualFocusSeconds: 1500,
+          actualBreakSeconds: 300,
+          completed: index != 0,
+        ),
+      ),
+    );
+
+    final SessionController controller = SessionController(storage: storage);
+
+    await tester.pumpWidget(ResessionApp(controller: controller));
+    await tester.pump();
+
+    await tester.tap(find.byKey(const ValueKey<String>('history-nav-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Completion Rate (last 7): 100% (7/7)'), findsOneWidget);
+    expect(find.text('Session 1'), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey<String>('history-filter-all')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Completion Rate (all): 88% (7/8)'), findsOneWidget);
+    await tester.dragUntilVisible(
+      find.text('Session 1'),
+      find.byType(ListView),
+      const Offset(0, -400),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Session 1'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    controller.dispose();
+  });
+
   testWidgets('History today focus excludes previous day records', (
     WidgetTester tester,
   ) async {
