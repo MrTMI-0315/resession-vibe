@@ -115,6 +115,7 @@ class SessionController extends ChangeNotifier {
   static const int maxCustomFocusMinutes = 180;
   static const int minCustomBreakMinutes = 1;
   static const int maxCustomBreakMinutes = 60;
+  static const int maxSessionTitleLength = 40;
   static const int historyInsightWindowSize = 7;
   static const List<String> driftCategories = <String>[
     '알림',
@@ -294,8 +295,16 @@ class SessionController extends ChangeNotifier {
   }
 
   static String displayTitle(String? title) {
-    final String normalized = title?.trim() ?? '';
+    final String normalized = normalizeSessionTitleInput(title ?? '').trim();
     return normalized.isEmpty ? 'Untitled' : normalized;
+  }
+
+  static String normalizeSessionTitleInput(String value) {
+    final String normalizedWhitespace = value.replaceAll(RegExp(r'\s+'), ' ');
+    if (normalizedWhitespace.length <= maxSessionTitleLength) {
+      return normalizedWhitespace;
+    }
+    return normalizedWhitespace.substring(0, maxSessionTitleLength);
   }
 
   static String? summarizeLastDriftCategory(List<DriftEvent> drifts) {
@@ -466,7 +475,7 @@ class SessionController extends ChangeNotifier {
   }
 
   void updatePendingSessionTitle(String value) {
-    _pendingSessionTitle = value;
+    _pendingSessionTitle = normalizeSessionTitleInput(value);
   }
 
   void startSession({String? title}) {
@@ -474,7 +483,9 @@ class SessionController extends ChangeNotifier {
       return;
     }
     final DateTime now = _now();
-    final String normalizedTitle = (title ?? _pendingSessionTitle).trim();
+    final String normalizedTitle = normalizeSessionTitleInput(
+      title ?? _pendingSessionTitle,
+    ).trim();
     _runState = SessionRunState(
       preset: _selectedPreset,
       phase: SessionPhase.focus,

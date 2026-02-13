@@ -791,4 +791,37 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     controller.dispose();
   });
+
+  testWidgets('Session title input is clamped to max length', (
+    WidgetTester tester,
+  ) async {
+    final SessionController controller = SessionController(
+      storage: InMemorySessionStorage(),
+      notifications: NoopSessionNotificationService(),
+    );
+    final String longTitle = 'A' * 120;
+
+    await tester.pumpWidget(ResessionApp(controller: controller));
+    await tester.pump();
+
+    await tester.enterText(
+      find.byKey(const ValueKey<String>('session-title-input')),
+      longTitle,
+    );
+    await tester.pump();
+
+    expect(
+      controller.pendingSessionTitle.length,
+      SessionController.maxSessionTitleLength,
+    );
+
+    controller.startSession();
+    expect(
+      controller.runState.sessionTitle?.length,
+      SessionController.maxSessionTitleLength,
+    );
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    controller.dispose();
+  });
 }

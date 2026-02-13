@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../history/history_screen.dart';
 import '../../ui/widgets/session_template.dart';
@@ -46,6 +47,8 @@ class HomeScreen extends StatelessWidget {
             key: const ValueKey<String>('session-title-input'),
             initialValue: controller.pendingSessionTitle,
             onChanged: controller.updatePendingSessionTitle,
+            maxLength: SessionController.maxSessionTitleLength,
+            maxLengthEnforcement: MaxLengthEnforcement.enforced,
             decoration: InputDecoration(
               hintText: '지금 할 일(선택)',
               isDense: true,
