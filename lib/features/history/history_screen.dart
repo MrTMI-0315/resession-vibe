@@ -5,6 +5,25 @@ import '../session/session_record.dart';
 
 enum _HistoryFilterScope { all, recent7 }
 
+const String _emptyHistoryMessage = 'No records yet.';
+
+extension _HistoryFilterScopeUX on _HistoryFilterScope {
+  String get chipLabel {
+    return switch (this) {
+      _HistoryFilterScope.all => 'All',
+      _HistoryFilterScope.recent7 => 'Recent 7',
+    };
+  }
+
+  String get completionWindowLabel {
+    return switch (this) {
+      _HistoryFilterScope.all => 'all',
+      _HistoryFilterScope.recent7 =>
+        'last ${SessionController.historyInsightWindowSize}',
+    };
+  }
+}
+
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key, required this.controller});
 
@@ -49,6 +68,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 _InsightHeader(
                   controller: widget.controller,
                   filterScope: _filterScope,
+                  hasRecords: records.isNotEmpty,
                   onFilterScopeChanged: (_HistoryFilterScope nextScope) {
                     setState(() => _filterScope = nextScope);
                   },
@@ -58,10 +78,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   child: records.isEmpty
                       ? const Center(
                           child: Text(
-                            'No records yet.',
+                            _emptyHistoryMessage,
                             style: TextStyle(
                               fontSize: 13,
                               color: Color(0xFF7A7A7A),
+                            ),
+                            key: ValueKey<String>(
+                              'history-empty-state-message',
                             ),
                           ),
                         )
@@ -88,15 +111,25 @@ class _InsightHeader extends StatelessWidget {
   const _InsightHeader({
     required this.controller,
     required this.filterScope,
+    required this.hasRecords,
     required this.onFilterScopeChanged,
   });
 
   final SessionController controller;
   final _HistoryFilterScope filterScope;
+  final bool hasRecords;
   final ValueChanged<_HistoryFilterScope> onFilterScopeChanged;
 
   @override
   Widget build(BuildContext context) {
+    final String completionRateText = hasRecords
+        ? (filterScope == _HistoryFilterScope.recent7
+              ? controller.historyCompletionRateInsight(
+                  window: SessionController.historyInsightWindowSize,
+                )
+              : controller.historyCompletionRateInsight())
+        : 'Completion Rate (${filterScope.completionWindowLabel}): 0% (0/0)';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -129,13 +162,13 @@ class _InsightHeader extends StatelessWidget {
           children: <Widget>[
             ChoiceChip(
               key: const ValueKey<String>('history-filter-all'),
-              label: const Text('All'),
+              label: Text(_HistoryFilterScope.all.chipLabel),
               selected: filterScope == _HistoryFilterScope.all,
               onSelected: (_) => onFilterScopeChanged(_HistoryFilterScope.all),
             ),
             ChoiceChip(
               key: const ValueKey<String>('history-filter-recent-7'),
-              label: const Text('Recent 7'),
+              label: Text(_HistoryFilterScope.recent7.chipLabel),
               selected: filterScope == _HistoryFilterScope.recent7,
               onSelected: (_) =>
                   onFilterScopeChanged(_HistoryFilterScope.recent7),
@@ -144,11 +177,7 @@ class _InsightHeader extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          filterScope == _HistoryFilterScope.recent7
-              ? controller.historyCompletionRateInsight(
-                  window: SessionController.historyInsightWindowSize,
-                )
-              : controller.historyCompletionRateInsight(),
+          completionRateText,
           key: const ValueKey<String>('history-insight-completion-rate'),
           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
         ),

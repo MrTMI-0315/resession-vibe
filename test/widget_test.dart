@@ -651,6 +651,71 @@ void main() {
     controller.dispose();
   });
 
+  testWidgets(
+    'History empty state aligns toggle labels with baseline strings',
+    (WidgetTester tester) async {
+      final SessionController controller = SessionController(
+        storage: InMemorySessionStorage(),
+      );
+
+      await tester.pumpWidget(ResessionApp(controller: controller));
+      await tester.pump();
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('history-nav-button')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey<String>('history-empty-state-message')),
+        findsOneWidget,
+      );
+      expect(find.text('Completion Rate (last 7): 0% (0/0)'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('history-filter-all')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey<String>('history-filter-recent-7')),
+        findsOneWidget,
+      );
+      expect(find.text('All'), findsOneWidget);
+      expect(find.text('Recent 7'), findsOneWidget);
+
+      final ChoiceChip allChip = tester.widget<ChoiceChip>(
+        find.byKey(const ValueKey<String>('history-filter-all')),
+      );
+      final ChoiceChip recentChip = tester.widget<ChoiceChip>(
+        find.byKey(const ValueKey<String>('history-filter-recent-7')),
+      );
+      expect(allChip.selected, isFalse);
+      expect(recentChip.selected, isTrue);
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('history-filter-all')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey<String>('history-empty-state-message')),
+        findsOneWidget,
+      );
+      expect(find.text('Completion Rate (all): 0% (0/0)'), findsOneWidget);
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('history-filter-recent-7')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey<String>('history-empty-state-message')),
+        findsOneWidget,
+      );
+      expect(find.text('Completion Rate (last 7): 0% (0/0)'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      controller.dispose();
+    },
+  );
+
   testWidgets('History filter state remains stable on long list scrolling', (
     WidgetTester tester,
   ) async {
