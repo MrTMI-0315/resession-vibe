@@ -1133,6 +1133,41 @@ void main() {
     controller.dispose();
   });
 
+  testWidgets('Insights screen shows empty-state without fallback records', (
+    WidgetTester tester,
+  ) async {
+    final SessionController controller = SessionController(
+      storage: InMemorySessionStorage(),
+    );
+
+    await tester.pumpWidget(ResessionApp(controller: controller));
+    await tester.pump();
+
+    await tester.tap(find.byKey(const ValueKey<String>('insights-nav-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('No sessions this week'), findsOneWidget);
+    expect(
+      find.text('Start a session to see your patterns here.'),
+      findsOneWidget,
+    );
+    expect(find.text('Focus sample'), findsNothing);
+    expect(find.text('No drift data yet'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey<String>('insights-start-session-button')),
+      findsOneWidget,
+    );
+
+    await tester.tap(
+      find.byKey(const ValueKey<String>('insights-start-session-button')),
+    );
+    await tester.pumpAndSettle();
+    expect(controller.runState.phase, SessionPhase.focus);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    controller.dispose();
+  });
+
   testWidgets('History completion insight and filter toggle', (
     WidgetTester tester,
   ) async {

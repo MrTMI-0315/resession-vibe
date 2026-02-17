@@ -106,10 +106,7 @@ class HomeScreen extends StatelessWidget {
                   onPressed: () {
                     Navigator.of(context).push(
                       MaterialPageRoute<void>(
-                        builder: (_) => InsightsScreen(
-                          controller: controller,
-                          showFallback: true,
-                        ),
+                        builder: (_) => InsightsScreen(controller: controller),
                       ),
                     );
                   },

@@ -6,14 +6,9 @@ import '../session/session_controller.dart';
 import '../session/session_record.dart';
 
 class InsightsScreen extends StatelessWidget {
-  const InsightsScreen({
-    super.key,
-    required this.controller,
-    this.showFallback = true,
-  });
+  const InsightsScreen({super.key, required this.controller});
 
   final SessionController controller;
-  final bool showFallback;
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +19,6 @@ class InsightsScreen extends StatelessWidget {
         final _WeeklyInsightData data = _buildWeeklyData(
           now: now,
           records: controller.records,
-          showFallback: showFallback,
         );
 
         return Scaffold(
@@ -46,6 +40,19 @@ class InsightsScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 14),
+                    if (!data.hasSessions)
+                      _InsightsEmptyState(
+                        onStartSession: () {
+                          if (controller.canStartSession) {
+                            Navigator.of(context).pop();
+                            controller.startSession(
+                              title: controller.pendingSessionTitle,
+                            );
+                          }
+                        },
+                        isEnabled: controller.canStartSession,
+                      ),
+                    if (!data.hasSessions) const SizedBox(height: 12),
                     _SummaryCard(data: data),
                     const SizedBox(height: 12),
                     _DriftChartCard(data: data),
@@ -71,7 +78,6 @@ class InsightsScreen extends StatelessWidget {
 _WeeklyInsightData _buildWeeklyData({
   required DateTime now,
   required List<SessionRecord> records,
-  required bool showFallback,
 }) {
   final DateTime weekStart = DateTime(
     now.year,
@@ -88,10 +94,6 @@ _WeeklyInsightData _buildWeeklyData({
       )
       .toList(growable: false);
 
-  if (weeklyRecords.isEmpty && showFallback) {
-    weeklyRecords = _fallbackWeeklyRecords(weekStart);
-  }
-
   final int focusSeconds = weeklyRecords.fold<int>(
     0,
     (int total, SessionRecord item) => total + item.actualFocusSeconds,
@@ -102,15 +104,19 @@ _WeeklyInsightData _buildWeeklyData({
       .length;
 
   final int sessionCount = weeklyRecords.length;
+  final bool hasSessions = sessionCount > 0;
   final String completion = sessionCount == 0
       ? '—'
       : '${((completedSessions * 100) / sessionCount).round()}% ($completedSessions/$sessionCount)';
 
   return _WeeklyInsightData(
-    focusText: SessionController.formatDurationMMSS(focusSeconds),
+    hasSessions: hasSessions,
+    focusText: hasSessions
+        ? SessionController.formatDurationMMSS(focusSeconds)
+        : '—',
     sessionsText: '$sessionCount',
     completionText: completion,
-    topDriftText: _topDriftText(driftBars),
+    topDriftText: hasSessions ? _topDriftText(driftBars) : '—',
     driftBars: driftBars,
     dateRangeLabel:
         '${_formatMonthDay(weekStart)} - ${_formatMonthDay(weekEnd)}',
@@ -151,28 +157,6 @@ String _topDriftText(List<_DriftBar> bars) {
     return '—';
   }
   return '${bars.first.category} (${bars.first.count})';
-}
-
-List<SessionRecord> _fallbackWeeklyRecords(DateTime weekStart) {
-  final DateTime base = weekStart.add(const Duration(days: 2, hours: 10));
-  return <SessionRecord>[
-    SessionRecord(
-      title: 'Focus sample',
-      startedAt: base,
-      endedAt: base.add(const Duration(minutes: 30)),
-      presetLabel: '25/5',
-      plannedFocus: 25,
-      plannedBreak: 5,
-      actualFocusSeconds: 1500,
-      actualBreakSeconds: 300,
-      completed: true,
-      drifts: const <DriftEvent>[
-        DriftEvent(atEpochMs: 1, category: '알림'),
-        DriftEvent(atEpochMs: 2, category: '알림'),
-        DriftEvent(atEpochMs: 3, category: '메신저'),
-      ],
-    ),
-  ];
 }
 
 String _formatMonthDay(DateTime value) {
@@ -278,9 +262,9 @@ class _DriftChartCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           if (data.driftBars.isEmpty)
-            const Text(
-              'No drift events yet',
-              style: TextStyle(fontSize: 11, color: Color(0xFF666666)),
+            Text(
+              data.hasSessions ? 'No drift events yet' : 'No drift data yet',
+              style: const TextStyle(fontSize: 11, color: Color(0xFF666666)),
             )
           else
             Wrap(
@@ -376,6 +360,7 @@ class _DriftBar {
 
 class _WeeklyInsightData {
   const _WeeklyInsightData({
+    required this.hasSessions,
     required this.focusText,
     required this.sessionsText,
     required this.completionText,
@@ -384,10 +369,53 @@ class _WeeklyInsightData {
     required this.dateRangeLabel,
   });
 
+  final bool hasSessions;
   final String focusText;
   final String sessionsText;
   final String completionText;
   final String topDriftText;
   final List<_DriftBar> driftBars;
   final String dateRangeLabel;
+}
+
+class _InsightsEmptyState extends StatelessWidget {
+  const _InsightsEmptyState({
+    required this.onStartSession,
+    required this.isEnabled,
+  });
+
+  final void Function() onStartSession;
+  final bool isEnabled;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F8F8),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const Text(
+            'No sessions this week',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Start a session to see your patterns here.',
+            style: TextStyle(fontSize: 13, color: Color(0xFF666666)),
+          ),
+          const SizedBox(height: 10),
+          ElevatedButton(
+            key: const ValueKey<String>('insights-start-session-button'),
+            onPressed: isEnabled ? onStartSession : null,
+            child: const Text('Start session'),
+          ),
+        ],
+      ),
+    );
+  }
 }
