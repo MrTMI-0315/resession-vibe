@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 class RunSurface extends StatelessWidget {
@@ -5,6 +7,7 @@ class RunSurface extends StatelessWidget {
     super.key,
     required this.phaseLabel,
     required this.timeText,
+    required this.progress,
     required this.onTap,
     this.timerTextKey,
     this.phaseLabelColor,
@@ -13,6 +16,7 @@ class RunSurface extends StatelessWidget {
 
   final String phaseLabel;
   final String timeText;
+  final double progress;
   final VoidCallback onTap;
   final Key? timerTextKey;
   final Color? phaseLabelColor;
@@ -22,6 +26,9 @@ class RunSurface extends StatelessWidget {
   Widget build(BuildContext context) {
     final Color resolvedLabelColor = phaseLabelColor ?? Colors.white;
     final Color resolvedRingColor = ringColor ?? Colors.white;
+    final double resolvedProgress = progress.clamp(0.0, 1.0);
+    final Color trackColor = const Color(0x1AFFFFFF);
+    final Color progressColor = resolvedRingColor.withValues(alpha: 0.85);
 
     return GestureDetector(
       onTap: onTap,
@@ -49,7 +56,12 @@ class RunSurface extends StatelessWidget {
                   fit: StackFit.expand,
                   children: <Widget>[
                     CustomPaint(
-                      painter: _RunRingPainter(color: resolvedRingColor),
+                      key: const ValueKey<String>('run-ring'),
+                      painter: _RunRingPainter(
+                        trackColor: trackColor,
+                        progressColor: progressColor,
+                        progress: resolvedProgress,
+                      ),
                     ),
                     Center(
                       child: Text(
@@ -76,31 +88,45 @@ class RunSurface extends StatelessWidget {
 }
 
 class _RunRingPainter extends CustomPainter {
-  const _RunRingPainter({required this.color});
+  const _RunRingPainter({
+    required this.trackColor,
+    required this.progressColor,
+    required this.progress,
+  });
 
-  final Color color;
+  final Color trackColor;
+  final Color progressColor;
+  final double progress;
 
   @override
   void paint(Canvas canvas, Size size) {
     final Offset center = Offset(size.width / 2, size.height / 2);
-    final double radius = (size.shortestSide / 2) - 8;
+    final double radius = (size.shortestSide / 2) - 12;
+    const double strokeWidth = 5;
+
+    final Rect arcRect = Rect.fromCircle(center: center, radius: radius);
 
     final Paint outerRing = Paint()
-      ..color = const Color(0x33FFFFFF)
+      ..color = trackColor
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
+      ..strokeWidth = strokeWidth;
     canvas.drawCircle(center, radius, outerRing);
 
-    final Paint innerRing = Paint()
-      ..color = color.withValues(alpha: 0.65)
+    final Paint progressRing = Paint()
+      ..color = progressColor
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2
+      ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
-    canvas.drawCircle(center, radius, innerRing);
+    final double sweepAngle = 2 * pi * progress;
+    if (sweepAngle > 0.0) {
+      canvas.drawArc(arcRect, -pi / 2, sweepAngle, false, progressRing);
+    }
   }
 
   @override
   bool shouldRepaint(covariant _RunRingPainter oldDelegate) {
-    return oldDelegate.color != color;
+    return oldDelegate.trackColor != trackColor ||
+        oldDelegate.progressColor != progressColor ||
+        oldDelegate.progress != progress;
   }
 }

@@ -7,6 +7,7 @@ import 'package:resession/features/session/session_controller.dart';
 import 'package:resession/features/session/session_notifications.dart';
 import 'package:resession/features/session/session_record.dart';
 import 'package:resession/features/session/session_storage.dart';
+import 'package:resession/ui/widgets/run_surface.dart';
 
 class _TestClock {
   _TestClock(this.now);
@@ -267,6 +268,53 @@ void main() {
     await tester.pump();
     expect(find.byKey(const ValueKey<String>('screen-focus')), findsOneWidget);
     expect(find.text('25:00'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    controller.dispose();
+  });
+
+  testWidgets('Run surface progress reflects remaining/total', (
+    WidgetTester tester,
+  ) async {
+    final _TestClock clock = _TestClock(DateTime(2026, 1, 1, 0, 0, 0));
+    final SessionController controller = SessionController(
+      nowProvider: () => clock.now,
+      storage: InMemorySessionStorage(),
+    );
+    controller.selectCustomPreset(1, 1);
+
+    await tester.pumpWidget(ResessionApp(controller: controller));
+    await tester.pump();
+
+    await tester.tap(find.byKey(const ValueKey<String>('focus-primary-cta')));
+    await tester.pump();
+
+    RunSurface focusSurface = tester.widget<RunSurface>(
+      find.byKey(const ValueKey<String>('run-surface')),
+    );
+    expect(focusSurface.progress, closeTo(0.0, 0.0001));
+
+    clock.advance(const Duration(seconds: 15));
+    await tester.pump(const Duration(seconds: 15));
+    focusSurface = tester.widget<RunSurface>(
+      find.byKey(const ValueKey<String>('run-surface')),
+    );
+    expect(focusSurface.progress, closeTo(0.25, 0.0001));
+
+    await tester.tap(find.byKey(const ValueKey<String>('run-surface')));
+    await tester.pump();
+
+    RunSurface breakSurface = tester.widget<RunSurface>(
+      find.byKey(const ValueKey<String>('run-surface')),
+    );
+    expect(breakSurface.progress, closeTo(0.0, 0.0001));
+
+    clock.advance(const Duration(seconds: 20));
+    await tester.pump(const Duration(seconds: 20));
+    breakSurface = tester.widget<RunSurface>(
+      find.byKey(const ValueKey<String>('run-surface')),
+    );
+    expect(breakSurface.progress, closeTo(1.0 - 40.0 / 60.0, 0.0001));
 
     await tester.pumpWidget(const SizedBox.shrink());
     controller.dispose();

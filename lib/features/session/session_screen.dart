@@ -10,6 +10,13 @@ class SessionScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final int totalSeconds = controller.runState.preset.focusSeconds;
+    final int remainingSeconds = controller.currentFocusRemainingSeconds;
+    final int clampedRemainingSeconds = remainingSeconds.clamp(0, totalSeconds);
+    final double progress = totalSeconds <= 0
+        ? 0.0
+        : 1.0 - (clampedRemainingSeconds / totalSeconds);
+
     return Scaffold(
       key: const ValueKey<String>('screen-focus'),
       backgroundColor: const Color(0xFF1A1D22),
@@ -23,6 +30,7 @@ class SessionScreen extends StatelessWidget {
             timeText: SessionController.formatClock(
               controller.currentFocusRemainingSeconds,
             ),
+            progress: progress,
             onTap: controller.pauseForBreak,
             ringColor: const Color(0xFF89CBFD),
             phaseLabelColor: const Color(0xFFD3E9FF),

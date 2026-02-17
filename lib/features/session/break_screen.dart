@@ -10,6 +10,13 @@ class BreakScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final int totalSeconds = controller.runState.preset.breakSeconds;
+    final int remainingSeconds = controller.currentBreakRemainingSeconds;
+    final int clampedRemainingSeconds = remainingSeconds.clamp(0, totalSeconds);
+    final double progress = totalSeconds <= 0
+        ? 0.0
+        : 1.0 - (clampedRemainingSeconds / totalSeconds);
+
     return Scaffold(
       key: const ValueKey<String>('screen-break'),
       backgroundColor: const Color(0xFF1A1D22),
@@ -23,6 +30,7 @@ class BreakScreen extends StatelessWidget {
             timeText: SessionController.formatClock(
               controller.currentBreakRemainingSeconds,
             ),
+            progress: progress,
             onTap: controller.resumeFocus,
             ringColor: const Color(0xFFF18E6D),
             phaseLabelColor: const Color(0xFFFFD8C5),
