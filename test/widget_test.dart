@@ -40,6 +40,16 @@ class _FakeNotificationService implements SessionNotificationService {
   }
 
   @override
+  Future<void> scheduleFocusComplete({required int inSeconds}) async {
+    scheduledEvents.add('focus-complete:$inSeconds');
+  }
+
+  @override
+  Future<void> cancelFocusComplete() async {
+    cancelCalls += 1;
+  }
+
+  @override
   Future<void> cancelAll() async {
     cancelCalls += 1;
   }
@@ -443,7 +453,7 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey<String>('focus-primary-cta')));
     await tester.pump();
-    expect(notifications.scheduledEvents.last, 'focus:60');
+    expect(notifications.scheduledEvents.last, 'focus-complete:60');
 
     await tester.tap(find.byKey(const ValueKey<String>('run-surface')));
     await tester.pump();
@@ -452,7 +462,7 @@ void main() {
     clock.advance(const Duration(seconds: 61));
     await tester.pump(const Duration(seconds: 61));
     expect(controller.runState.phase, SessionPhase.focus);
-    expect(notifications.scheduledEvents.last, 'focus:60');
+    expect(notifications.scheduledEvents.last, 'focus-complete:60');
 
     await tester.pumpWidget(const SizedBox.shrink());
     controller.dispose();

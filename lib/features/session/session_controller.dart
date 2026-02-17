@@ -747,7 +747,7 @@ class SessionController extends ChangeNotifier {
   void _scheduleNotificationForCurrentPhase() {
     if (_runState.phase == SessionPhase.focus) {
       unawaited(
-        _notifications.scheduleFocusToBreak(
+        _notifications.scheduleFocusComplete(
           inSeconds: currentFocusRemainingSeconds,
         ),
       );

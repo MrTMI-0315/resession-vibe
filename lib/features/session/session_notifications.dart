@@ -11,6 +11,10 @@ abstract class SessionNotificationService {
 
   Future<void> scheduleBreakToFocus({required int inSeconds});
 
+  Future<void> scheduleFocusComplete({required int inSeconds});
+
+  Future<void> cancelFocusComplete();
+
   Future<void> cancelAll();
 }
 
@@ -25,11 +29,17 @@ class NoopSessionNotificationService implements SessionNotificationService {
   Future<void> scheduleBreakToFocus({required int inSeconds}) async {}
 
   @override
+  Future<void> scheduleFocusComplete({required int inSeconds}) async {}
+
+  @override
+  Future<void> cancelFocusComplete() async {}
+
+  @override
   Future<void> cancelAll() async {}
 }
 
 class LocalSessionNotificationService implements SessionNotificationService {
-  static const int _focusToBreakNotificationId = 11001;
+  static const int _focusCompleteNotificationId = 2001;
   static const int _breakToFocusNotificationId = 11002;
 
   LocalSessionNotificationService({NotificationService? notificationService})
@@ -60,11 +70,17 @@ class LocalSessionNotificationService implements SessionNotificationService {
 
   @override
   Future<void> scheduleFocusToBreak({required int inSeconds}) async {
+    await scheduleFocusComplete(inSeconds: inSeconds);
+  }
+
+  @override
+  Future<void> scheduleFocusComplete({required int inSeconds}) async {
     await _scheduleTransition(
-      id: _focusToBreakNotificationId,
+      id: _focusCompleteNotificationId,
       title: 'Focus complete',
       body: 'Break has started.',
       inSeconds: inSeconds,
+      sound: null,
     );
   }
 
@@ -84,8 +100,18 @@ class LocalSessionNotificationService implements SessionNotificationService {
       return;
     }
     try {
-      await _plugin.cancel(id: _focusToBreakNotificationId);
+      await cancelFocusComplete();
       await _plugin.cancel(id: _breakToFocusNotificationId);
+    } catch (_) {}
+  }
+
+  @override
+  Future<void> cancelFocusComplete() async {
+    if (kIsWeb) {
+      return;
+    }
+    try {
+      await _plugin.cancel(id: _focusCompleteNotificationId);
     } catch (_) {}
   }
 
@@ -94,6 +120,7 @@ class LocalSessionNotificationService implements SessionNotificationService {
     required String title,
     required String body,
     required int inSeconds,
+    String? sound,
   }) async {
     if (kIsWeb) {
       return;
@@ -107,11 +134,12 @@ class LocalSessionNotificationService implements SessionNotificationService {
       final tz.TZDateTime at = tz.TZDateTime.now(
         tz.local,
       ).add(Duration(seconds: inSeconds));
-      const NotificationDetails details = NotificationDetails(
+      final NotificationDetails details = NotificationDetails(
         iOS: DarwinNotificationDetails(
           presentAlert: true,
           presentBadge: false,
           presentSound: true,
+          sound: sound,
         ),
       );
       await _plugin.zonedSchedule(
