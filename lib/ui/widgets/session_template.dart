@@ -15,10 +15,13 @@ class SessionTemplate extends StatelessWidget {
     required this.onCtaPressed,
     required this.presets,
     required this.selectedPreset,
+    this.useMonolithicSurface = false,
     this.statusDotColor,
     this.onPresetSelected,
     this.extraContent,
     this.presetLabelBuilder,
+    this.focusTimerTextKey,
+    this.focusCtaKey,
   });
 
   final String statusLabel;
@@ -28,13 +31,117 @@ class SessionTemplate extends StatelessWidget {
   final VoidCallback? onCtaPressed;
   final List<SessionPreset> presets;
   final SessionPreset selectedPreset;
+  final bool useMonolithicSurface;
   final Color? statusDotColor;
   final ValueChanged<SessionPreset>? onPresetSelected;
   final Widget? extraContent;
   final String Function(SessionPreset)? presetLabelBuilder;
+  final Key? focusTimerTextKey;
+  final Key? focusCtaKey;
 
   @override
   Widget build(BuildContext context) {
+    if (useMonolithicSurface) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF1A1D22),
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+              child: Column(
+                children: <Widget>[
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 460),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Resession',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              'Stay in flow with focused timing',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFFA6A6A6),
+                              ),
+                            ),
+                            const SizedBox(height: 48),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 8,
+                              ),
+                              child: Text(
+                                statusLabel,
+                                key: const ValueKey<String>(
+                                  'focus-status-label',
+                                ),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Color(0xFFB5B5B5),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              timeText,
+                              key: focusTimerTextKey,
+                              style: const TextStyle(
+                                fontSize: 84,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -2,
+                                color: Colors.white,
+                                height: 0.95,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              description,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFFB5B5B5),
+                              ),
+                            ),
+                            const SizedBox(height: 28),
+                            PresetSelector(
+                              presets: presets,
+                              selectedPreset: selectedPreset,
+                              onSelected: onPresetSelected,
+                              labelBuilder: presetLabelBuilder,
+                            ),
+                            if (extraContent != null) ...[
+                              const SizedBox(height: 12),
+                              extraContent!,
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  PrimaryCtaButton(
+                    ctaKey: focusCtaKey,
+                    label: ctaLabel,
+                    onPressed: onCtaPressed,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFF1C1D20),
       body: SafeArea(
@@ -95,7 +202,11 @@ class SessionTemplate extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  PrimaryCtaButton(label: ctaLabel, onPressed: onCtaPressed),
+                  PrimaryCtaButton(
+                    ctaKey: focusCtaKey,
+                    label: ctaLabel,
+                    onPressed: onCtaPressed,
+                  ),
                 ],
               ),
             ),

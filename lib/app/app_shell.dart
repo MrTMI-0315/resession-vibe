@@ -50,9 +50,18 @@ class AppShell extends StatelessWidget {
         return CupertinoTabView(
           builder: (BuildContext context) {
             return switch (index) {
-              0 => HomeScreen(controller: controller),
-              1 => InsightsScreen(controller: controller),
-              2 => HistoryScreen(controller: controller),
+              0 => HomeScreen(
+                key: const ValueKey<String>('screen-focus'),
+                controller: controller,
+              ),
+              1 => InsightsScreen(
+                key: const ValueKey<String>('screen-insights'),
+                controller: controller,
+              ),
+              2 => HistoryScreen(
+                key: const ValueKey<String>('screen-history'),
+                controller: controller,
+              ),
               _ => const _SettingsScreen(),
             };
           },
@@ -68,6 +77,7 @@ class _SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
+      key: ValueKey<String>('screen-settings'),
       backgroundColor: Color(0xFF1C1D20),
       body: Center(
         child: Text(

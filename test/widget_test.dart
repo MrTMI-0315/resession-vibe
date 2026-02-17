@@ -82,9 +82,17 @@ void main() {
     await tester.pumpWidget(ResessionApp(controller: controller));
     await tester.pump();
 
+    expect(find.byKey(const ValueKey<String>('screen-focus')), findsOneWidget);
     expect(find.text('Resession'), findsOneWidget);
     expect(find.text('Idle'), findsOneWidget);
-    expect(find.text('Start session'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey<String>('focus-timer-text')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey<String>('focus-primary-cta')),
+      findsOneWidget,
+    );
     expect(find.text('Focus • Break 5m'), findsOneWidget);
     expect(
       find.byKey(const ValueKey<String>('preset-check-25/5')),
@@ -139,7 +147,7 @@ void main() {
 
       expect(find.text('Custom (40/8)'), findsOneWidget);
 
-      await tester.tap(find.text('Start session'));
+      await tester.tap(find.byKey(const ValueKey<String>('focus-primary-cta')));
       await tester.pump();
 
       expect(controller.runState.phase, SessionPhase.focus);
@@ -185,7 +193,7 @@ void main() {
     await tester.pumpWidget(ResessionApp(controller: controller));
     await tester.pump();
 
-    await tester.tap(find.text('Start session'));
+    await tester.tap(find.byKey(const ValueKey<String>('focus-primary-cta')));
     await tester.pump();
 
     clock.advance(const Duration(seconds: 1));
@@ -231,7 +239,7 @@ void main() {
     await tester.pumpWidget(ResessionApp(controller: controller));
     await tester.pump();
 
-    await tester.tap(find.text('Start session'));
+    await tester.tap(find.byKey(const ValueKey<String>('focus-primary-cta')));
     await tester.pump();
     await tester.tap(find.text('Pause'));
     await tester.pump();
@@ -267,7 +275,7 @@ void main() {
     await tester.pumpWidget(ResessionApp(controller: controller));
     await tester.pump();
 
-    await tester.tap(find.text('Start session'));
+    await tester.tap(find.byKey(const ValueKey<String>('focus-primary-cta')));
     await tester.pump();
     expect(notifications.scheduledEvents.last, 'focus:60');
 
@@ -335,7 +343,7 @@ void main() {
     await tester.pumpWidget(ResessionApp(controller: controller));
     await tester.pump();
 
-    await tester.tap(find.text('Start session'));
+    await tester.tap(find.byKey(const ValueKey<String>('focus-primary-cta')));
     await tester.pump();
     expect(controller.runState.phase, SessionPhase.focus);
 
@@ -375,7 +383,7 @@ void main() {
       await tester.pumpWidget(ResessionApp(controller: controller));
       await tester.pump();
 
-      await tester.tap(find.text('Start session'));
+      await tester.tap(find.byKey(const ValueKey<String>('focus-primary-cta')));
       await tester.pump();
 
       expect(controller.runState.phase, SessionPhase.focus);
@@ -406,7 +414,7 @@ void main() {
     await tester.pumpWidget(ResessionApp(controller: controller));
     await tester.pump();
 
-    await tester.tap(find.text('Start session'));
+    await tester.tap(find.byKey(const ValueKey<String>('focus-primary-cta')));
     await tester.pump();
 
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
@@ -441,7 +449,7 @@ void main() {
     );
     await tester.pump();
 
-    await tester.tap(find.text('Start session'));
+    await tester.tap(find.byKey(const ValueKey<String>('focus-primary-cta')));
     await tester.pump();
 
     clock.advance(const Duration(seconds: 65));
@@ -493,7 +501,7 @@ void main() {
     await tester.pumpWidget(ResessionApp(controller: firstController));
     await tester.pump();
 
-    await tester.tap(find.text('Start session'));
+    await tester.tap(find.byKey(const ValueKey<String>('focus-primary-cta')));
     await tester.pump();
 
     firstController.logDrift(category: '알림');
@@ -544,7 +552,7 @@ void main() {
     await tester.pumpWidget(ResessionApp(controller: firstController));
     await tester.pump();
 
-    await tester.tap(find.text('Start session'));
+    await tester.tap(find.byKey(const ValueKey<String>('focus-primary-cta')));
     await tester.pump();
 
     firstController.logDrift(category: '메신저', note: 'quick check');
@@ -596,7 +604,7 @@ void main() {
     await tester.pumpWidget(ResessionApp(controller: controller));
     await tester.pump();
 
-    await tester.tap(find.text('Start session'));
+    await tester.tap(find.byKey(const ValueKey<String>('focus-primary-cta')));
     await tester.pump();
 
     controller.logDrift(category: '환경', note: 'focus drift');
@@ -650,7 +658,7 @@ void main() {
     await tester.pumpWidget(ResessionApp(controller: controller));
     await tester.pump();
 
-    await tester.tap(find.text('Start session'));
+    await tester.tap(find.byKey(const ValueKey<String>('focus-primary-cta')));
     await tester.pump();
 
     controller.logDrift(category: '완벽주의', note: '   ');
@@ -684,7 +692,7 @@ void main() {
       await tester.pumpWidget(ResessionApp(controller: controller));
       await tester.pump();
 
-      await tester.tap(find.text('Start session'));
+      await tester.tap(find.byKey(const ValueKey<String>('focus-primary-cta')));
       await tester.pump();
 
       controller.logDrift(category: '   ', note: 'ignored');
@@ -732,7 +740,7 @@ void main() {
       await tester.pumpWidget(ResessionApp(controller: controller));
       await tester.pump();
 
-      await tester.tap(find.text('Start session'));
+      await tester.tap(find.byKey(const ValueKey<String>('focus-primary-cta')));
       await tester.pump();
 
       controller.logDrift(category: '   ', note: 'ignored');
@@ -777,7 +785,7 @@ void main() {
       await tester.pumpWidget(ResessionApp(controller: controller));
       await tester.pump();
 
-      await tester.tap(find.text('Start session'));
+      await tester.tap(find.byKey(const ValueKey<String>('focus-primary-cta')));
       await tester.pump();
 
       controller.logDrift(category: '   ', note: 'ignored');
@@ -821,7 +829,7 @@ void main() {
       await tester.pumpWidget(ResessionApp(controller: controller));
       await tester.pump();
 
-      await tester.tap(find.text('Start session'));
+      await tester.tap(find.byKey(const ValueKey<String>('focus-primary-cta')));
       await tester.pump();
 
       controller.logDrift(category: '  알림 ', note: '  focus\ndrift  ');
@@ -863,7 +871,7 @@ void main() {
       await tester.pumpWidget(ResessionApp(controller: firstController));
       await tester.pump();
 
-      await tester.tap(find.text('Start session'));
+      await tester.tap(find.byKey(const ValueKey<String>('focus-primary-cta')));
       await tester.pump();
 
       firstController.logDrift(category: '  알림 ', note: '  focus\\ndrift  ');
@@ -916,7 +924,7 @@ void main() {
       await tester.pumpWidget(ResessionApp(controller: firstController));
       await tester.pump();
 
-      await tester.tap(find.text('Start session'));
+      await tester.tap(find.byKey(const ValueKey<String>('focus-primary-cta')));
       await tester.pump();
 
       firstController.logDrift(category: '   알림   ', note: '   ');
@@ -969,7 +977,7 @@ void main() {
       await tester.pumpWidget(ResessionApp(controller: firstController));
       await tester.pump();
 
-      await tester.tap(find.text('Start session'));
+      await tester.tap(find.byKey(const ValueKey<String>('focus-primary-cta')));
       await tester.pump();
 
       firstController.logDrift(category: ' \n알림\n ', note: '   \n \t  ');
@@ -1019,7 +1027,7 @@ void main() {
     await tester.pumpWidget(ResessionApp(controller: controller));
     await tester.pump();
 
-    await tester.tap(find.text('Start session'));
+    await tester.tap(find.byKey(const ValueKey<String>('focus-primary-cta')));
     await tester.pump();
 
     clock.advance(const Duration(seconds: 65));
@@ -1191,6 +1199,7 @@ void main() {
     await tester.pumpWidget(ResessionApp(controller: controller));
     await tester.pump();
 
+    expect(find.byKey(const ValueKey<String>('screen-focus')), findsOneWidget);
     expect(find.byKey(const ValueKey<String>('tab-focus')), findsOneWidget);
     expect(find.byKey(const ValueKey<String>('tab-insights')), findsOneWidget);
     expect(find.byKey(const ValueKey<String>('tab-history')), findsOneWidget);
@@ -1198,6 +1207,10 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey<String>('tab-insights')));
     await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey<String>('screen-insights')),
+      findsOneWidget,
+    );
     expect(find.text('This week'), findsOneWidget);
     expect(find.text('No sessions this week'), findsOneWidget);
 
@@ -1639,7 +1652,7 @@ void main() {
     );
     await tester.pump();
 
-    await tester.tap(find.text('Start session'));
+    await tester.tap(find.byKey(const ValueKey<String>('focus-primary-cta')));
     await tester.pump();
 
     clock.advance(const Duration(seconds: 65));

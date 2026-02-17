@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 class PrimaryCtaButton extends StatelessWidget {
   const PrimaryCtaButton({
     super.key,
+    this.ctaKey,
     required this.label,
     required this.onPressed,
   });
 
+  final Key? ctaKey;
   final String label;
   final VoidCallback? onPressed;
 
@@ -16,6 +18,7 @@ class PrimaryCtaButton extends StatelessWidget {
       width: double.infinity,
       height: 60,
       child: ElevatedButton(
+        key: ctaKey,
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFCFE6F9),

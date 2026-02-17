@@ -24,6 +24,9 @@ class HomeScreen extends StatelessWidget {
     final String? guardrailMessage = controller.startGuardrailMessage;
 
     return SessionTemplate(
+      useMonolithicSurface: true,
+      focusTimerTextKey: const ValueKey<String>('focus-timer-text'),
+      focusCtaKey: const ValueKey<String>('focus-primary-cta'),
       statusLabel: 'Idle',
       timeText: SessionController.formatClock(preset.focusSeconds),
       description: 'Focus • Break ${preset.breakMinutes}m',
