@@ -15,6 +15,8 @@ class AppShell extends StatelessWidget {
   Widget build(BuildContext context) {
     return CupertinoTabScaffold(
       tabBar: CupertinoTabBar(
+        activeColor: const Color(0xFF6E76FF),
+        inactiveColor: CupertinoColors.systemGrey,
         items: <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(
@@ -32,7 +34,7 @@ class AppShell extends StatelessWidget {
           ),
           BottomNavigationBarItem(
             icon: Icon(
-              CupertinoIcons.time,
+              CupertinoIcons.clock,
               key: const ValueKey<String>('tab-history'),
             ),
             label: 'History',

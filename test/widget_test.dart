@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:resession/app/app.dart';
@@ -1277,6 +1278,25 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(controller.runState.phase, SessionPhase.focus);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    controller.dispose();
+  });
+
+  testWidgets('Tab bar renders configured CupertinoIcons', (
+    WidgetTester tester,
+  ) async {
+    final SessionController controller = SessionController(
+      storage: InMemorySessionStorage(),
+    );
+
+    await tester.pumpWidget(ResessionApp(controller: controller));
+    await tester.pump();
+
+    expect(find.byIcon(CupertinoIcons.timer), findsOneWidget);
+    expect(find.byIcon(CupertinoIcons.chart_bar), findsOneWidget);
+    expect(find.byIcon(CupertinoIcons.clock), findsOneWidget);
+    expect(find.byIcon(CupertinoIcons.gear), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
     controller.dispose();
