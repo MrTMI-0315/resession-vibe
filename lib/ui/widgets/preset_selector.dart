@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../features/session/session_controller.dart';
+import '../theme/app_tone.dart';
 
 class PresetSelector extends StatelessWidget {
   const PresetSelector({
@@ -22,7 +23,7 @@ class PresetSelector extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: const Color(0xFFF0EFED),
+        color: AppTone.surface,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
@@ -65,11 +66,11 @@ class _PresetPill extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
-            color: selected ? const Color(0xFF6A6A6A) : Colors.transparent,
+            color: selected ? AppTone.surfaceBorder : Colors.transparent,
           ),
         ),
         child: Material(
-          color: selected ? const Color(0xFFE8E7E5) : Colors.transparent,
+          color: selected ? AppTone.surfaceStrong : Colors.transparent,
           borderRadius: BorderRadius.circular(999),
           child: InkWell(
             borderRadius: BorderRadius.circular(999),
@@ -85,7 +86,7 @@ class _PresetPill extends StatelessWidget {
                         Icons.check,
                         key: ValueKey<String>('preset-check-$label'),
                         size: 14,
-                        color: const Color(0xFF111111),
+                        color: AppTone.textPrimary,
                       ),
                     if (selected) const SizedBox(width: 4),
                     Flexible(
@@ -99,8 +100,8 @@ class _PresetPill extends StatelessWidget {
                               ? FontWeight.w700
                               : FontWeight.w500,
                           color: selected
-                              ? const Color(0xFF111111)
-                              : const Color(0xFFB7B7B7),
+                              ? AppTone.textPrimary
+                              : AppTone.textSecondary,
                         ),
                       ),
                     ),

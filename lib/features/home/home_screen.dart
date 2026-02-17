@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../ui/widgets/session_template.dart';
+import '../../ui/theme/app_tone.dart';
 import '../session/session_controller.dart';
 import '../session/session_record.dart';
 
@@ -59,18 +60,29 @@ class HomeScreen extends StatelessWidget {
               maxLengthEnforcement: MaxLengthEnforcement.enforced,
               decoration: InputDecoration(
                 hintText: '지금 할 일(선택)',
+                hintStyle: const TextStyle(color: AppTone.textSecondary),
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 12,
                   vertical: 10,
                 ),
                 filled: true,
-                fillColor: const Color(0xFFF1F1F1),
+                fillColor: AppTone.surfaceStrong,
+                focusColor: AppTone.textPrimary,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
                 ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: AppTone.surfaceBorder),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: AppTone.textSecondary),
+                ),
               ),
+              style: const TextStyle(color: AppTone.textPrimary),
             ),
             const SizedBox(height: 10),
             if (guardrailMessage != null)
@@ -249,7 +261,7 @@ class _RecentSessionsSection extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F1F1),
+        color: AppTone.surface,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -257,13 +269,17 @@ class _RecentSessionsSection extends StatelessWidget {
         children: [
           const Text(
             'Recent Sessions',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppTone.textPrimary,
+            ),
           ),
           const SizedBox(height: 8),
           if (records.isEmpty)
             const Text(
               'No saved sessions yet.',
-              style: TextStyle(fontSize: 12, color: Color(0xFF6D6D6D)),
+              style: TextStyle(fontSize: 12, color: AppTone.textMuted),
             )
           else
             ...records.asMap().entries.map((
@@ -297,21 +313,21 @@ class _RecentSessionRow extends StatelessWidget {
     fontSize: 16,
     fontWeight: FontWeight.w600,
     height: 1.22,
-    color: Color(0xF0FFFFFF),
+    color: AppTone.textPrimary,
   );
 
   static const TextStyle _titleUntitledStyle = TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.w600,
     height: 1.22,
-    color: Color(0xCCFFFFFF),
+    color: AppTone.textMuted,
   );
 
   static const TextStyle _metaStyle = TextStyle(
     fontSize: 13,
     fontWeight: FontWeight.w500,
     height: 1.25,
-    color: Color(0xB3FFFFFF),
+    color: AppTone.textSecondary,
     letterSpacing: 0,
   );
 
@@ -320,7 +336,6 @@ class _RecentSessionRow extends StatelessWidget {
     final String title = SessionController.displayTitle(record.title);
     final String? lastDriftSummary =
         SessionController.summarizeLastDriftSummary(record.drifts);
-    final ThemeData theme = Theme.of(context);
     final String presetLabel = _normalizePresetLabel(record.presetLabel);
 
     return Column(
@@ -353,13 +368,9 @@ class _RecentSessionRow extends StatelessWidget {
                         if (lastDriftSummary != null)
                           DecoratedBox(
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF6F6F6),
+                              color: AppTone.surfaceStrong,
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: theme.dividerColor.withValues(
-                                  alpha: 0.18,
-                                ),
-                              ),
+                              border: Border.all(color: AppTone.surfaceBorder),
                             ),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
@@ -368,9 +379,9 @@ class _RecentSessionRow extends StatelessWidget {
                               ),
                               child: Text(
                                 lastDriftSummary,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11,
-                                  color: Color(0xFF5A5A5A),
+                                  color: AppTone.textSecondary,
                                 ),
                               ),
                             ),
@@ -387,7 +398,7 @@ class _RecentSessionRow extends StatelessWidget {
           const Divider(
             height: 1,
             thickness: 0.7,
-            color: Color(0x1AFFFFFF),
+            color: AppTone.surfaceBorder,
             indent: 2,
             endIndent: 2,
           ),
