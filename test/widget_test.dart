@@ -1920,7 +1920,7 @@ void main() {
     },
   );
 
-  testWidgets('Task title accepts embedded spaces during input', (
+  testWidgets('Task title keeps embedded spaces during input', (
     WidgetTester tester,
   ) async {
     final SessionController controller = SessionController(
@@ -1933,12 +1933,12 @@ void main() {
 
     await tester.enterText(
       find.byKey(const ValueKey<String>('session-title-input')),
-      'hello world',
+      'hello   world',
     );
     await tester.pump();
 
-    expect(find.text('hello world'), findsOneWidget);
-    expect(controller.pendingSessionTitle, 'hello world');
+    expect(find.text('hello   world'), findsOneWidget);
+    expect(controller.pendingSessionTitle, 'hello   world');
 
     await tester.pumpWidget(const SizedBox.shrink());
     controller.dispose();
