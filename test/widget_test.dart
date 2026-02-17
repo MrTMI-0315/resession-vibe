@@ -1848,34 +1848,59 @@ void main() {
     controller.dispose();
   });
 
-  testWidgets('Session title whitespace is normalized in UI and controller', (
+  testWidgets(
+    'Session title whitespace is trimmed only at save and controller boundaries',
+    (WidgetTester tester) async {
+      final SessionController controller = SessionController(
+        storage: InMemorySessionStorage(),
+        notifications: NoopSessionNotificationService(),
+      );
+      const String noisyTitle = '   deep    work   ';
+
+      await tester.pumpWidget(ResessionApp(controller: controller));
+      await tester.pump();
+
+      await tester.enterText(
+        find.byKey(const ValueKey<String>('session-title-input')),
+        noisyTitle,
+      );
+      await tester.pump();
+
+      expect(controller.pendingSessionTitle, '   deep    work   ');
+
+      controller.startSession();
+      expect(controller.runState.sessionTitle, 'deep    work');
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      controller.dispose();
+    },
+  );
+
+  testWidgets('Task title accepts embedded spaces during input', (
     WidgetTester tester,
   ) async {
     final SessionController controller = SessionController(
       storage: InMemorySessionStorage(),
       notifications: NoopSessionNotificationService(),
     );
-    const String noisyTitle = '   deep    work   ';
 
     await tester.pumpWidget(ResessionApp(controller: controller));
     await tester.pump();
 
     await tester.enterText(
       find.byKey(const ValueKey<String>('session-title-input')),
-      noisyTitle,
+      'hello world',
     );
     await tester.pump();
 
-    expect(controller.pendingSessionTitle, 'deep work');
-
-    controller.startSession();
-    expect(controller.runState.sessionTitle, 'deep work');
+    expect(find.text('hello world'), findsOneWidget);
+    expect(controller.pendingSessionTitle, 'hello world');
 
     await tester.pumpWidget(const SizedBox.shrink());
     controller.dispose();
   });
 
-  testWidgets('Session title clamps to 40 chars after whitespace normalization', (
+  testWidgets('Session title clamps to 40 chars after trimming boundaries', (
     WidgetTester tester,
   ) async {
     final SessionController controller = SessionController(
@@ -1884,7 +1909,9 @@ void main() {
     );
     const String noisyTitle =
         '  1234567890    1234567890    1234567890    1234567890    1234567890  ';
-    const String expected = '1234567890 1234567890 1234567890 1234567';
+    final String expectedAfterInput = noisyTitle.substring(0, 40);
+    final String expectedAfterSave =
+        SessionController.normalizeSessionTitleInput(expectedAfterInput);
 
     await tester.pumpWidget(ResessionApp(controller: controller));
     await tester.pump();
@@ -1895,12 +1922,15 @@ void main() {
     );
     await tester.pump();
 
-    expect(controller.pendingSessionTitle, expected);
+    expect(controller.pendingSessionTitle, expectedAfterInput);
     expect(controller.pendingSessionTitle.length, 40);
 
     controller.startSession();
-    expect(controller.runState.sessionTitle, expected);
-    expect(controller.runState.sessionTitle?.length, 40);
+    expect(controller.runState.sessionTitle, expectedAfterSave);
+    expect(
+      controller.runState.sessionTitle?.length,
+      lessThanOrEqualTo(SessionController.maxSessionTitleLength),
+    );
 
     await tester.pumpWidget(const SizedBox.shrink());
     controller.dispose();

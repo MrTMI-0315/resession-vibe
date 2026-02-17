@@ -334,13 +334,18 @@ class SessionController extends ChangeNotifier {
   }
 
   static String normalizeSessionTitleInput(String value) {
-    final String normalizedWhitespace = value
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .trim();
-    if (normalizedWhitespace.length <= maxSessionTitleLength) {
-      return normalizedWhitespace;
+    final String normalized = value.trim();
+    if (normalized.length <= maxSessionTitleLength) {
+      return normalized;
     }
-    return normalizedWhitespace.substring(0, maxSessionTitleLength);
+    return normalized.substring(0, maxSessionTitleLength);
+  }
+
+  static String _clampSessionTitleLength(String value) {
+    if (value.length <= maxSessionTitleLength) {
+      return value;
+    }
+    return value.substring(0, maxSessionTitleLength);
   }
 
   static String? summarizeLastDriftCategory(List<DriftEvent> drifts) {
@@ -523,7 +528,7 @@ class SessionController extends ChangeNotifier {
   }
 
   void updatePendingSessionTitle(String value) {
-    _pendingSessionTitle = normalizeSessionTitleInput(value);
+    _pendingSessionTitle = _clampSessionTitleLength(value);
   }
 
   void startSession({String? title}) {
