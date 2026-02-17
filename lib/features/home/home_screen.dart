@@ -41,101 +41,109 @@ class HomeScreen extends StatelessWidget {
         unawaited(_openCustomPresetSheet(context));
       },
       presetLabelBuilder: controller.presetDisplayLabel,
-      extraContent: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          TextFormField(
-            key: const ValueKey<String>('session-title-input'),
-            initialValue: controller.pendingSessionTitle,
-            onChanged: controller.updatePendingSessionTitle,
-            inputFormatters: [
-              TextInputFormatter.withFunction((
-                TextEditingValue oldValue,
-                TextEditingValue newValue,
-              ) {
-                final String normalized =
-                    SessionController.normalizeSessionTitleInput(newValue.text);
-                return TextEditingValue(
-                  text: normalized,
-                  selection: TextSelection.collapsed(offset: normalized.length),
-                );
-              }),
-            ],
-            maxLength: SessionController.maxSessionTitleLength,
-            maxLengthEnforcement: MaxLengthEnforcement.enforced,
-            decoration: InputDecoration(
-              hintText: '지금 할 일(선택)',
-              isDense: true,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 10,
-              ),
-              filled: true,
-              fillColor: const Color(0xFFF1F1F1),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Row(
-              children: <Widget>[
-                TextButton(
-                  key: const ValueKey<String>('history-nav-button'),
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => HistoryScreen(controller: controller),
-                      ),
-                    );
-                  },
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 0,
-                      vertical: 2,
+      extraContent: Padding(
+        padding: const EdgeInsets.only(bottom: 56),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextFormField(
+              key: const ValueKey<String>('session-title-input'),
+              initialValue: controller.pendingSessionTitle,
+              onChanged: controller.updatePendingSessionTitle,
+              inputFormatters: [
+                TextInputFormatter.withFunction((
+                  TextEditingValue oldValue,
+                  TextEditingValue newValue,
+                ) {
+                  final String normalized =
+                      SessionController.normalizeSessionTitleInput(
+                        newValue.text,
+                      );
+                  return TextEditingValue(
+                    text: normalized,
+                    selection: TextSelection.collapsed(
+                      offset: normalized.length,
                     ),
-                  ),
-                  child: const Text('History'),
-                ),
-                const SizedBox(width: 12),
-                TextButton(
-                  key: const ValueKey<String>('insights-nav-button'),
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => InsightsScreen(controller: controller),
-                      ),
-                    );
-                  },
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 0,
-                      vertical: 2,
-                    ),
-                  ),
-                  child: const Text('Insights'),
-                ),
+                  );
+                }),
               ],
-            ),
-          ),
-          const SizedBox(height: 6),
-          if (guardrailMessage != null)
-            Padding(
-              padding: EdgeInsets.only(bottom: 10),
-              child: Text(
-                guardrailMessage,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFFAB3A3A),
-                  fontWeight: FontWeight.w500,
+              maxLength: SessionController.maxSessionTitleLength,
+              maxLengthEnforcement: MaxLengthEnforcement.enforced,
+              decoration: InputDecoration(
+                hintText: '지금 할 일(선택)',
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                filled: true,
+                fillColor: const Color(0xFFF1F1F1),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
                 ),
               ),
             ),
-          _RecentSessionsSection(records: recentRecords),
-        ],
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Row(
+                children: <Widget>[
+                  TextButton(
+                    key: const ValueKey<String>('history-nav-button'),
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => HistoryScreen(controller: controller),
+                        ),
+                      );
+                    },
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 0,
+                        vertical: 2,
+                      ),
+                    ),
+                    child: const Text('History'),
+                  ),
+                  const SizedBox(width: 12),
+                  TextButton(
+                    key: const ValueKey<String>('insights-nav-button'),
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) =>
+                              InsightsScreen(controller: controller),
+                        ),
+                      );
+                    },
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 0,
+                        vertical: 2,
+                      ),
+                    ),
+                    child: const Text('Insights'),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 6),
+            if (guardrailMessage != null)
+              Padding(
+                padding: EdgeInsets.only(bottom: 10),
+                child: Text(
+                  guardrailMessage,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFFAB3A3A),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            _RecentSessionsSection(records: recentRecords),
+          ],
+        ),
       ),
     );
   }

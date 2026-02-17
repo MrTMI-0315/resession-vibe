@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../features/home/home_screen.dart';
+import 'app_shell.dart';
 import '../features/session/break_screen.dart';
 import '../features/session/end_screen.dart';
 import '../features/session/session_controller.dart';
@@ -76,7 +76,7 @@ class _ResessionAppState extends State<ResessionApp>
   Widget _buildScreen() {
     switch (_controller.runState.phase) {
       case SessionPhase.idle:
-        return HomeScreen(controller: _controller);
+        return AppShell(controller: _controller);
       case SessionPhase.focus:
         return SessionScreen(controller: _controller);
       case SessionPhase.breakTime:

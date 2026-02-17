@@ -44,6 +44,34 @@ class _FakeNotificationService implements SessionNotificationService {
 }
 
 void main() {
+  Future<void> openHistory(WidgetTester tester) async {
+    if (find
+        .byKey(const ValueKey<String>('tab-history'))
+        .evaluate()
+        .isNotEmpty) {
+      await tester.tap(find.byKey(const ValueKey<String>('tab-history')));
+      await tester.pumpAndSettle();
+      return;
+    }
+
+    await tester.tap(find.byKey(const ValueKey<String>('history-nav-button')));
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> openInsights(WidgetTester tester) async {
+    if (find
+        .byKey(const ValueKey<String>('tab-insights'))
+        .evaluate()
+        .isNotEmpty) {
+      await tester.tap(find.byKey(const ValueKey<String>('tab-insights')));
+      await tester.pumpAndSettle();
+      return;
+    }
+
+    await tester.tap(find.byKey(const ValueKey<String>('insights-nav-button')));
+    await tester.pumpAndSettle();
+  }
+
   testWidgets('App boots to idle home and supports 50/10 preset selection', (
     WidgetTester tester,
   ) async {
@@ -493,7 +521,7 @@ void main() {
 
     expect(find.textContaining('Drift: 알림'), findsOneWidget);
 
-    await tester.tap(find.byKey(const ValueKey<String>('history-nav-button')));
+    await openHistory(tester);
     await tester.pumpAndSettle();
     expect(find.text('Drift: 알림'), findsOneWidget);
 
@@ -544,7 +572,7 @@ void main() {
 
     expect(find.textContaining('Drift: 메신저 (quick check)'), findsOneWidget);
 
-    await tester.tap(find.byKey(const ValueKey<String>('history-nav-button')));
+    await openHistory(tester);
     await tester.pumpAndSettle();
     expect(find.text('Drift: 메신저 (quick check)'), findsOneWidget);
 
@@ -582,7 +610,7 @@ void main() {
 
     expect(find.textContaining(' • $driftText'), findsOneWidget);
 
-    await tester.tap(find.byKey(const ValueKey<String>('history-nav-button')));
+    await openHistory(tester);
     await tester.pumpAndSettle();
     expect(find.text(driftText), findsOneWidget);
 
@@ -601,7 +629,7 @@ void main() {
     await tester.pumpWidget(ResessionApp(controller: emptyHistoryController));
     await tester.pump();
 
-    await tester.tap(find.byKey(const ValueKey<String>('history-nav-button')));
+    await openHistory(tester);
     await tester.pumpAndSettle();
     expect(
       find.byKey(const ValueKey<String>('history-empty-state-message')),
@@ -635,7 +663,7 @@ void main() {
     await tester.pump();
     expect(find.textContaining(' • Drift: 완벽주의'), findsOneWidget);
 
-    await tester.tap(find.byKey(const ValueKey<String>('history-nav-button')));
+    await openHistory(tester);
     await tester.pumpAndSettle();
     expect(find.text('Drift: 완벽주의'), findsOneWidget);
 
@@ -680,9 +708,7 @@ void main() {
       await tester.pump();
       expect(find.textContaining(' • Drift: 알림'), findsOneWidget);
 
-      await tester.tap(
-        find.byKey(const ValueKey<String>('history-nav-button')),
-      );
+      await openHistory(tester);
       await tester.pumpAndSettle();
       expect(find.text('Drift: 알림'), findsOneWidget);
 
@@ -727,9 +753,7 @@ void main() {
       await tester.pump();
       expect(find.textContaining(' • $expectedSnapshot'), findsOneWidget);
 
-      await tester.tap(
-        find.byKey(const ValueKey<String>('history-nav-button')),
-      );
+      await openHistory(tester);
       await tester.pumpAndSettle();
       expect(find.text(expectedSnapshot), findsOneWidget);
 
@@ -773,9 +797,7 @@ void main() {
       await tester.pump();
       expect(find.textContaining(' • $expectedSnapshot'), findsOneWidget);
 
-      await tester.tap(
-        find.byKey(const ValueKey<String>('history-nav-button')),
-      );
+      await openHistory(tester);
       await tester.pumpAndSettle();
       expect(find.text(expectedSnapshot), findsOneWidget);
 
@@ -816,9 +838,7 @@ void main() {
       await tester.pump();
       expect(find.textContaining(' • $expectedSnapshot'), findsOneWidget);
 
-      await tester.tap(
-        find.byKey(const ValueKey<String>('history-nav-button')),
-      );
+      await openHistory(tester);
       await tester.pumpAndSettle();
       expect(find.textContaining(expectedSnapshot), findsOneWidget);
 
@@ -871,9 +891,7 @@ void main() {
 
       expect(find.textContaining(' • $expectedSnapshot'), findsOneWidget);
 
-      await tester.tap(
-        find.byKey(const ValueKey<String>('history-nav-button')),
-      );
+      await openHistory(tester);
       await tester.pumpAndSettle();
       expect(find.text(expectedSnapshot), findsOneWidget);
 
@@ -926,9 +944,7 @@ void main() {
 
       expect(find.textContaining(' • $expectedSnapshot'), findsOneWidget);
 
-      await tester.tap(
-        find.byKey(const ValueKey<String>('history-nav-button')),
-      );
+      await openHistory(tester);
       await tester.pumpAndSettle();
       expect(find.text(expectedSnapshot), findsOneWidget);
 
@@ -981,9 +997,7 @@ void main() {
 
       expect(find.textContaining(' • $expectedSnapshot'), findsOneWidget);
 
-      await tester.tap(
-        find.byKey(const ValueKey<String>('history-nav-button')),
-      );
+      await openHistory(tester);
       await tester.pumpAndSettle();
       expect(find.text(expectedSnapshot), findsOneWidget);
 
@@ -1061,10 +1075,9 @@ void main() {
     await tester.pumpWidget(ResessionApp(controller: controller));
     await tester.pump();
 
-    await tester.tap(find.byKey(const ValueKey<String>('history-nav-button')));
+    await openHistory(tester);
     await tester.pumpAndSettle();
 
-    expect(find.text('History'), findsOneWidget);
     expect(
       find.byKey(const ValueKey<String>('history-insight-today-sessions')),
       findsOneWidget,
@@ -1119,7 +1132,7 @@ void main() {
     await tester.pumpWidget(ResessionApp(controller: controller));
     await tester.pump();
 
-    await tester.tap(find.byKey(const ValueKey<String>('insights-nav-button')));
+    await openInsights(tester);
     await tester.pumpAndSettle();
 
     expect(find.text('This week'), findsOneWidget);
@@ -1143,7 +1156,7 @@ void main() {
     await tester.pumpWidget(ResessionApp(controller: controller));
     await tester.pump();
 
-    await tester.tap(find.byKey(const ValueKey<String>('insights-nav-button')));
+    await openInsights(tester);
     await tester.pumpAndSettle();
 
     expect(find.text('No sessions this week'), findsOneWidget);
@@ -1157,6 +1170,36 @@ void main() {
       find.byKey(const ValueKey<String>('insights-start-session-button')),
       findsOneWidget,
     );
+
+    await tester.tap(
+      find.byKey(const ValueKey<String>('insights-start-session-button')),
+    );
+    await tester.pumpAndSettle();
+    expect(controller.runState.phase, SessionPhase.focus);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    controller.dispose();
+  });
+
+  testWidgets('Tab shell switches to Insights and starts session safely', (
+    WidgetTester tester,
+  ) async {
+    final SessionController controller = SessionController(
+      storage: InMemorySessionStorage(),
+    );
+
+    await tester.pumpWidget(ResessionApp(controller: controller));
+    await tester.pump();
+
+    expect(find.byKey(const ValueKey<String>('tab-focus')), findsOneWidget);
+    expect(find.byKey(const ValueKey<String>('tab-insights')), findsOneWidget);
+    expect(find.byKey(const ValueKey<String>('tab-history')), findsOneWidget);
+    expect(find.byKey(const ValueKey<String>('tab-settings')), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey<String>('tab-insights')));
+    await tester.pumpAndSettle();
+    expect(find.text('This week'), findsOneWidget);
+    expect(find.text('No sessions this week'), findsOneWidget);
 
     await tester.tap(
       find.byKey(const ValueKey<String>('insights-start-session-button')),
@@ -1193,7 +1236,7 @@ void main() {
     await tester.pumpWidget(ResessionApp(controller: controller));
     await tester.pump();
 
-    await tester.tap(find.byKey(const ValueKey<String>('history-nav-button')));
+    await openHistory(tester);
     await tester.pumpAndSettle();
 
     expect(find.text('Completion Rate (last 7): 100% (7/7)'), findsOneWidget);
@@ -1226,9 +1269,7 @@ void main() {
       await tester.pumpWidget(ResessionApp(controller: controller));
       await tester.pump();
 
-      await tester.tap(
-        find.byKey(const ValueKey<String>('history-nav-button')),
-      );
+      await openHistory(tester);
       await tester.pumpAndSettle();
 
       expect(
@@ -1342,7 +1383,7 @@ void main() {
     await tester.pumpWidget(ResessionApp(controller: controller));
     await tester.pump();
 
-    await tester.tap(find.byKey(const ValueKey<String>('history-nav-button')));
+    await openHistory(tester);
     await tester.pumpAndSettle();
     await tester.dragUntilVisible(
       find.text('Session $totalSessions'),
@@ -1453,7 +1494,7 @@ void main() {
     await tester.pumpWidget(ResessionApp(controller: controller));
     await tester.pump();
 
-    await tester.tap(find.byKey(const ValueKey<String>('history-nav-button')));
+    await openHistory(tester);
     await tester.pumpAndSettle();
 
     expect(find.text('Today Sessions: 0'), findsOneWidget);
@@ -1511,7 +1552,7 @@ void main() {
     await tester.pumpWidget(ResessionApp(controller: controller));
     await tester.pump();
 
-    await tester.tap(find.byKey(const ValueKey<String>('history-nav-button')));
+    await openHistory(tester);
     await tester.pumpAndSettle();
 
     expect(find.text('Today Sessions: 2'), findsOneWidget);
@@ -1570,7 +1611,7 @@ void main() {
     await tester.pumpWidget(ResessionApp(controller: controller));
     await tester.pump();
 
-    await tester.tap(find.byKey(const ValueKey<String>('history-nav-button')));
+    await openHistory(tester);
     await tester.pumpAndSettle();
 
     expect(find.text('Top Drift (last 7): A (2)'), findsOneWidget);
@@ -1608,7 +1649,7 @@ void main() {
 
     expect(find.textContaining('Untitled • Custom (1/1) •'), findsOneWidget);
 
-    await tester.tap(find.byKey(const ValueKey<String>('history-nav-button')));
+    await openHistory(tester);
     await tester.pumpAndSettle();
     expect(find.text('Untitled'), findsOneWidget);
 

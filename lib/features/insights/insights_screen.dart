@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 
@@ -44,9 +45,12 @@ class InsightsScreen extends StatelessWidget {
                       _InsightsEmptyState(
                         onStartSession: () {
                           if (controller.canStartSession) {
-                            Navigator.of(context).pop();
-                            controller.startSession(
-                              title: controller.pendingSessionTitle,
+                            unawaited(
+                              Navigator.of(context).maybePop().then((_) {
+                                controller.startSession(
+                                  title: controller.pendingSessionTitle,
+                                );
+                              }),
                             );
                           }
                         },
