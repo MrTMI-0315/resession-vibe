@@ -265,26 +265,109 @@ class _RecentSessionsSection extends StatelessWidget {
               style: TextStyle(fontSize: 12, color: Color(0xFF6D6D6D)),
             )
           else
-            ...records.map((SessionRecord record) {
-              final String? lastDriftSummary =
-                  SessionController.summarizeLastDriftSummary(record.drifts);
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Text(
-                  '${SessionController.displayTitle(record.title)} • ${record.presetLabel} • Focus ${SessionController.formatDurationMMSS(record.actualFocusSeconds)}${lastDriftSummary == null ? '' : ' • $lastDriftSummary'} • ${_formatDateTime(record.endedAt)}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF3A3A3A),
-                  ),
-                ),
+            ...records.asMap().entries.map((
+              MapEntry<int, SessionRecord> entry,
+            ) {
+              final int index = entry.key;
+              final SessionRecord record = entry.value;
+              return _RecentSessionRow(
+                record: record,
+                showDivider: index != records.length - 1,
               );
             }),
         ],
       ),
     );
   }
+}
 
-  String _formatDateTime(DateTime dateTime) {
+class _RecentSessionRow extends StatelessWidget {
+  const _RecentSessionRow({required this.record, required this.showDivider});
+
+  final SessionRecord record;
+  final bool showDivider;
+
+  @override
+  Widget build(BuildContext context) {
+    final String title = SessionController.displayTitle(record.title);
+    final String? lastDriftSummary =
+        SessionController.summarizeLastDriftSummary(record.drifts);
+    final ThemeData theme = Theme.of(context);
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        height: 1.15,
+                        color: Color(0xFF1F1F1F),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 2,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(
+                          '${record.presetLabel} • Focus ${SessionController.formatDurationMMSS(record.actualFocusSeconds)} • ${_formatRecordDateTime(record.endedAt)}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF4B4B4B),
+                            height: 1.2,
+                          ),
+                        ),
+                        if (lastDriftSummary != null)
+                          DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF6F6F6),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: theme.dividerColor.withValues(
+                                  alpha: 0.18,
+                                ),
+                              ),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              child: Text(
+                                lastDriftSummary,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Color(0xFF5A5A5A),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (showDivider)
+          const Divider(height: 1, thickness: 0.7, color: Color(0x1A000000)),
+      ],
+    );
+  }
+
+  String _formatRecordDateTime(DateTime dateTime) {
     final String month = dateTime.month.toString().padLeft(2, '0');
     final String day = dateTime.day.toString().padLeft(2, '0');
     final String hour = dateTime.hour.toString().padLeft(2, '0');
