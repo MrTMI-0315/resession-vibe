@@ -247,7 +247,7 @@ class _RecentSessionsSection extends StatelessWidget {
     return Container(
       key: const ValueKey<String>('recent-sessions-card'),
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       decoration: BoxDecoration(
         color: const Color(0xFFF1F1F1),
         borderRadius: BorderRadius.circular(16),
@@ -293,6 +293,28 @@ class _RecentSessionRow extends StatelessWidget {
   final SessionRecord record;
   final bool showDivider;
 
+  static const TextStyle _titleStyle = TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.w600,
+    height: 1.22,
+    color: Color(0xF0FFFFFF),
+  );
+
+  static const TextStyle _titleUntitledStyle = TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.w600,
+    height: 1.22,
+    color: Color(0xCCFFFFFF),
+  );
+
+  static const TextStyle _metaStyle = TextStyle(
+    fontSize: 13,
+    fontWeight: FontWeight.w500,
+    height: 1.25,
+    color: Color(0xB3FFFFFF),
+    letterSpacing: 0,
+  );
+
   @override
   Widget build(BuildContext context) {
     final String title = SessionController.displayTitle(record.title);
@@ -304,7 +326,7 @@ class _RecentSessionRow extends StatelessWidget {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.symmetric(vertical: 12),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -314,34 +336,19 @@ class _RecentSessionRow extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        height: 1.15,
-                        color: Color(0xFF1F1F1F),
-                      ),
+                      style: title == 'Untitled'
+                          ? _titleUntitledStyle
+                          : _titleStyle,
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     Wrap(
-                      spacing: 8,
+                      spacing: 0,
                       runSpacing: 2,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Text(
-                          '$presetLabel • Focus ${SessionController.formatDurationMMSS(record.actualFocusSeconds)}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF4B4B4B),
-                            height: 1.2,
-                          ),
-                        ),
-                        Text(
-                          _formatRecordDateTime(record.endedAt),
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF6D6D6D),
-                            height: 1.2,
-                          ),
+                          '$presetLabel • Focus ${SessionController.formatDurationMMSS(record.actualFocusSeconds)} • ${_formatRecordDateTime(record.endedAt)}',
+                          style: _metaStyle,
                         ),
                         if (lastDriftSummary != null)
                           DecoratedBox(
@@ -377,7 +384,13 @@ class _RecentSessionRow extends StatelessWidget {
           ),
         ),
         if (showDivider)
-          const Divider(height: 1, thickness: 0.7, color: Color(0x1A000000)),
+          const Divider(
+            height: 1,
+            thickness: 0.7,
+            color: Color(0x1AFFFFFF),
+            indent: 2,
+            endIndent: 2,
+          ),
       ],
     );
   }
