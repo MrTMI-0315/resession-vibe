@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../features/session/session_controller.dart';
+import '../../ui/theme/app_copy.dart';
 import 'preset_selector.dart';
 import 'primary_cta_button.dart';
 import 'session_status_card.dart';
@@ -73,8 +74,8 @@ class SessionTemplate extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(height: 4),
-                            const Text(
-                              'Stay in flow with focused timing',
+                            Text(
+                              AppCopy.appSubtitle,
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Color(0xFFA6A6A6),
@@ -193,7 +194,7 @@ class SessionTemplate extends StatelessWidget {
                           ),
                           const SizedBox(height: 6),
                           const Text(
-                            'See your focus patterns',
+                            AppCopy.appSubtitle,
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w400,
