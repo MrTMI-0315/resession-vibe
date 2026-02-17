@@ -81,6 +81,7 @@ class LocalSessionNotificationService implements SessionNotificationService {
       body: 'Break has started.',
       inSeconds: inSeconds,
       sound: null,
+      interruptionLevel: InterruptionLevel.timeSensitive,
     );
   }
 
@@ -121,6 +122,7 @@ class LocalSessionNotificationService implements SessionNotificationService {
     required String body,
     required int inSeconds,
     String? sound,
+    InterruptionLevel? interruptionLevel,
   }) async {
     if (kIsWeb) {
       return;
@@ -140,6 +142,7 @@ class LocalSessionNotificationService implements SessionNotificationService {
           presentBadge: false,
           presentSound: true,
           sound: sound,
+          interruptionLevel: interruptionLevel,
         ),
       );
       await _plugin.zonedSchedule(
