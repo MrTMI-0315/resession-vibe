@@ -1094,6 +1094,45 @@ void main() {
     controller.dispose();
   });
 
+  testWidgets('Insights screen shows weekly summary and drift chart', (
+    WidgetTester tester,
+  ) async {
+    final DateTime now = DateTime.now();
+    final InMemorySessionStorage storage = InMemorySessionStorage(
+      <SessionRecord>[
+        SessionRecord(
+          title: 'Insights sample',
+          startedAt: now.subtract(const Duration(minutes: 90)),
+          endedAt: now.subtract(const Duration(minutes: 60)),
+          presetLabel: '25/5',
+          plannedFocus: 25,
+          plannedBreak: 5,
+          actualFocusSeconds: 1500,
+          actualBreakSeconds: 300,
+          completed: true,
+          drifts: const <DriftEvent>[DriftEvent(atEpochMs: 1, category: '알림')],
+        ),
+      ],
+    );
+    final SessionController controller = SessionController(storage: storage);
+
+    await tester.pumpWidget(ResessionApp(controller: controller));
+    await tester.pump();
+
+    await tester.tap(find.byKey(const ValueKey<String>('insights-nav-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('This week'), findsOneWidget);
+    expect(find.text('Focus Time'), findsOneWidget);
+    expect(find.text('Sessions'), findsOneWidget);
+    expect(find.text('Completion'), findsOneWidget);
+    expect(find.text('Top Drift'), findsOneWidget);
+    expect(find.byType(CustomPaint), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    controller.dispose();
+  });
+
   testWidgets('History completion insight and filter toggle', (
     WidgetTester tester,
   ) async {
