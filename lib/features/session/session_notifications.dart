@@ -80,7 +80,7 @@ class LocalSessionNotificationService implements SessionNotificationService {
       title: 'Focus complete',
       body: 'Break has started.',
       inSeconds: inSeconds,
-      sound: null,
+      sound: 'default',
     );
   }
 

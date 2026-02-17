@@ -44,7 +44,7 @@ class NotificationService {
     _permissionGranted =
         await darwin?.requestPermissions(
           alert: true,
-          badge: false,
+          badge: true,
           sound: true,
         ) ??
         false;
