@@ -3,7 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import '../theme/app_tone.dart';
 
-class RunSurface extends StatelessWidget {
+class RunSurface extends StatefulWidget {
   const RunSurface({
     super.key,
     required this.phaseLabel,
@@ -28,18 +28,43 @@ class RunSurface extends StatelessWidget {
   final Duration animationDuration;
 
   @override
+  State<RunSurface> createState() => _RunSurfaceState();
+}
+
+class _RunSurfaceState extends State<RunSurface> {
+  late double _previousProgress;
+
+  double get _resolvedProgress {
+    return widget.progress.clamp(0.0, 1.0);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _previousProgress = _resolvedProgress;
+  }
+
+  @override
+  void didUpdateWidget(covariant RunSurface oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!widget.animate || widget.animationDuration == Duration.zero) {
+      _previousProgress = _resolvedProgress;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final Color resolvedLabelColor = phaseLabelColor ?? Colors.white;
-    final Color resolvedRingColor = ringColor ?? AppTone.accent;
-    final double resolvedProgress = progress.clamp(0.0, 1.0);
+    final Color resolvedLabelColor = widget.phaseLabelColor ?? Colors.white;
+    final Color resolvedRingColor = widget.ringColor ?? AppTone.accent;
+    final double resolvedProgress = _resolvedProgress;
     final Color trackColor = AppTone.ringTrack;
     final Color progressColor = resolvedRingColor.withValues(alpha: 0.85);
-    final Duration effectiveDuration = animate
-        ? animationDuration
+    final Duration effectiveDuration = widget.animate
+        ? widget.animationDuration
         : Duration.zero;
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: widget.onTap,
       behavior: HitTestBehavior.opaque,
       child: Center(
         child: ConstrainedBox(
@@ -48,9 +73,9 @@ class RunSurface extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               Text(
-                phaseLabel,
+                widget.phaseLabel,
                 style: TextStyle(
-                  color: resolvedLabelColor.withValues(alpha: 0.55),
+                  color: resolvedLabelColor,
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                   letterSpacing: 0.5,
@@ -67,9 +92,16 @@ class RunSurface extends StatelessWidget {
                       duration: effectiveDuration,
                       curve: Curves.easeOutCubic,
                       tween: Tween<double>(
-                        begin: resolvedProgress,
+                        begin: _previousProgress,
                         end: resolvedProgress,
                       ),
+                      onEnd: () {
+                        if (_previousProgress != resolvedProgress) {
+                          setState(() {
+                            _previousProgress = resolvedProgress;
+                          });
+                        }
+                      },
                       builder:
                           (
                             BuildContext context,
@@ -88,8 +120,8 @@ class RunSurface extends StatelessWidget {
                     ),
                     Center(
                       child: Text(
-                        timeText,
-                        key: timerTextKey,
+                        widget.timeText,
+                        key: widget.timerTextKey,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 84,
