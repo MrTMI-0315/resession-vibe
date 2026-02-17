@@ -16,7 +16,7 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final SessionPreset preset = controller.selectedPreset;
     final List<SessionRecord> recentRecords = controller.records.reversed
-        .take(5)
+        .take(3)
         .toList();
     final bool canStartSession = controller.canStartSession;
     final String? guardrailMessage = controller.startGuardrailMessage;
@@ -245,6 +245,7 @@ class _RecentSessionsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      key: const ValueKey<String>('recent-sessions-card'),
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -271,6 +272,7 @@ class _RecentSessionsSection extends StatelessWidget {
               final int index = entry.key;
               final SessionRecord record = entry.value;
               return _RecentSessionRow(
+                key: ValueKey<String>('recent-session-row-$index'),
                 record: record,
                 showDivider: index != records.length - 1,
               );
@@ -282,7 +284,11 @@ class _RecentSessionsSection extends StatelessWidget {
 }
 
 class _RecentSessionRow extends StatelessWidget {
-  const _RecentSessionRow({required this.record, required this.showDivider});
+  const _RecentSessionRow({
+    super.key,
+    required this.record,
+    required this.showDivider,
+  });
 
   final SessionRecord record;
   final bool showDivider;
@@ -293,6 +299,7 @@ class _RecentSessionRow extends StatelessWidget {
     final String? lastDriftSummary =
         SessionController.summarizeLastDriftSummary(record.drifts);
     final ThemeData theme = Theme.of(context);
+    final String presetLabel = _normalizePresetLabel(record.presetLabel);
 
     return Column(
       children: [
@@ -321,10 +328,18 @@ class _RecentSessionRow extends StatelessWidget {
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Text(
-                          '${record.presetLabel} • Focus ${SessionController.formatDurationMMSS(record.actualFocusSeconds)} • ${_formatRecordDateTime(record.endedAt)}',
+                          '$presetLabel • Focus ${SessionController.formatDurationMMSS(record.actualFocusSeconds)}',
                           style: const TextStyle(
                             fontSize: 12,
                             color: Color(0xFF4B4B4B),
+                            height: 1.2,
+                          ),
+                        ),
+                        Text(
+                          _formatRecordDateTime(record.endedAt),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF6D6D6D),
                             height: 1.2,
                           ),
                         ),
@@ -373,5 +388,13 @@ class _RecentSessionRow extends StatelessWidget {
     final String hour = dateTime.hour.toString().padLeft(2, '0');
     final String minute = dateTime.minute.toString().padLeft(2, '0');
     return '$month/$day $hour:$minute';
+  }
+
+  String _normalizePresetLabel(String presetLabel) {
+    final String trimmedLabel = presetLabel.trim();
+    if (trimmedLabel.startsWith('Custom') || trimmedLabel == 'custom') {
+      return 'Custom';
+    }
+    return trimmedLabel;
   }
 }

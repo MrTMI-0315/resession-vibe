@@ -203,6 +203,50 @@ void main() {
     },
   );
 
+  testWidgets(
+    'Recent sessions rows render compact summary format with custom label normalized',
+    (WidgetTester tester) async {
+      final InMemorySessionStorage storage = InMemorySessionStorage([
+        SessionRecord(
+          title: 'Legacy custom session',
+          startedAt: DateTime(2026, 2, 1, 8, 0, 0),
+          endedAt: DateTime(2026, 2, 1, 8, 30, 0),
+          presetLabel: 'Custom (40/8)',
+          plannedFocus: 40,
+          plannedBreak: 8,
+          actualFocusSeconds: 2400,
+          actualBreakSeconds: 600,
+          completed: true,
+        ),
+      ]);
+      final SessionController controller = SessionController(storage: storage);
+
+      await tester.pumpWidget(ResessionApp(controller: controller));
+      await tester.pump();
+
+      final Finder recentCard = find.byKey(
+        const ValueKey<String>('recent-sessions-card'),
+      );
+      expect(recentCard, findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('recent-session-row-0')),
+        findsOneWidget,
+      );
+
+      expect(
+        find.descendant(
+          of: recentCard,
+          matching: find.textContaining('Custom'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Custom ('), findsNothing);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      controller.dispose();
+    },
+  );
+
   testWidgets('Start is disabled when custom is selected but not configured', (
     WidgetTester tester,
   ) async {
