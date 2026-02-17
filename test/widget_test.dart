@@ -72,6 +72,20 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  Future<void> openSettings(WidgetTester tester) async {
+    if (find
+        .byKey(const ValueKey<String>('tab-settings'))
+        .evaluate()
+        .isNotEmpty) {
+      await tester.tap(find.byKey(const ValueKey<String>('tab-settings')));
+      await tester.pumpAndSettle();
+      return;
+    }
+
+    await tester.tap(find.byKey(const ValueKey<String>('settings-nav-button')));
+    await tester.pumpAndSettle();
+  }
+
   testWidgets('App boots to idle home and supports 50/10 preset selection', (
     WidgetTester tester,
   ) async {
@@ -1219,6 +1233,32 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(controller.runState.phase, SessionPhase.focus);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    controller.dispose();
+  });
+
+  testWidgets('Settings tab shows minimal placeholder', (
+    WidgetTester tester,
+  ) async {
+    final SessionController controller = SessionController(
+      storage: InMemorySessionStorage(),
+    );
+
+    await tester.pumpWidget(ResessionApp(controller: controller));
+    await tester.pump();
+
+    await openSettings(tester);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey<String>('screen-settings')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey<String>('settings-coming-soon')),
+      findsOneWidget,
+    );
 
     await tester.pumpWidget(const SizedBox.shrink());
     controller.dispose();

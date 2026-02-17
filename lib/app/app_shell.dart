@@ -80,9 +80,24 @@ class _SettingsScreen extends StatelessWidget {
       key: ValueKey<String>('screen-settings'),
       backgroundColor: Color(0xFF1C1D20),
       body: Center(
-        child: Text(
-          'Settings coming soon',
-          style: TextStyle(color: Colors.white),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Text(
+              'Settings',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 26,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Coming soon',
+              key: ValueKey<String>('settings-coming-soon'),
+              style: TextStyle(color: Colors.white),
+            ),
+          ],
         ),
       ),
     );
