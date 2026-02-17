@@ -3,8 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../history/history_screen.dart';
-import '../insights/insights_screen.dart';
 import '../../ui/widgets/session_template.dart';
 import '../session/session_controller.dart';
 import '../session/session_record.dart';
@@ -92,50 +90,6 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 10),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Row(
-                children: <Widget>[
-                  TextButton(
-                    key: const ValueKey<String>('history-nav-button'),
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => HistoryScreen(controller: controller),
-                        ),
-                      );
-                    },
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 0,
-                        vertical: 2,
-                      ),
-                    ),
-                    child: const Text('History'),
-                  ),
-                  const SizedBox(width: 12),
-                  TextButton(
-                    key: const ValueKey<String>('insights-nav-button'),
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) =>
-                              InsightsScreen(controller: controller),
-                        ),
-                      );
-                    },
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 0,
-                        vertical: 2,
-                      ),
-                    ),
-                    child: const Text('Insights'),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 6),
             if (guardrailMessage != null)
               Padding(
                 padding: EdgeInsets.only(bottom: 10),
