@@ -32,7 +32,6 @@ class BreakScreen extends StatelessWidget {
             ),
             progress: progress,
             onTap: controller.resumeFocus,
-            ringColor: const Color(0xFFF18E6D),
             phaseLabelColor: const Color(0xFFFFD8C5),
           ),
         ),

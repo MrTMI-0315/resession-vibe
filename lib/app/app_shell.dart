@@ -5,6 +5,7 @@ import '../features/history/history_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/insights/insights_screen.dart';
 import '../features/session/session_controller.dart';
+import '../ui/theme/app_tone.dart';
 
 class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.controller});
@@ -15,8 +16,8 @@ class AppShell extends StatelessWidget {
   Widget build(BuildContext context) {
     return CupertinoTabScaffold(
       tabBar: CupertinoTabBar(
-        activeColor: const Color(0xFF6E76FF),
-        inactiveColor: CupertinoColors.systemGrey,
+        activeColor: AppTone.accent,
+        inactiveColor: AppTone.tabInactive,
         items: <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(

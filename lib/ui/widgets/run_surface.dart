@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import '../theme/app_tone.dart';
 
 class RunSurface extends StatelessWidget {
   const RunSurface({
@@ -25,9 +26,9 @@ class RunSurface extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color resolvedLabelColor = phaseLabelColor ?? Colors.white;
-    final Color resolvedRingColor = ringColor ?? Colors.white;
+    final Color resolvedRingColor = ringColor ?? AppTone.accent;
     final double resolvedProgress = progress.clamp(0.0, 1.0);
-    final Color trackColor = const Color(0x1AFFFFFF);
+    final Color trackColor = AppTone.ringTrack;
     final Color progressColor = resolvedRingColor.withValues(alpha: 0.85);
 
     return GestureDetector(

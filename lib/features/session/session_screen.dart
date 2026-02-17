@@ -32,7 +32,6 @@ class SessionScreen extends StatelessWidget {
             ),
             progress: progress,
             onTap: controller.pauseForBreak,
-            ringColor: const Color(0xFF89CBFD),
             phaseLabelColor: const Color(0xFFD3E9FF),
           ),
         ),
