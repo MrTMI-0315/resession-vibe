@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import '../theme/app_tone.dart';
@@ -54,7 +55,9 @@ class _RunSurfaceState extends State<RunSurface> {
 
   @override
   Widget build(BuildContext context) {
-    final Color resolvedLabelColor = widget.phaseLabelColor ?? Colors.white;
+    final Color resolvedLabelColor =
+        widget.phaseLabelColor?.withValues(alpha: AppTone.labelOpacity) ??
+        Colors.white;
     final Color resolvedRingColor = widget.ringColor ?? AppTone.accent;
     final double resolvedProgress = _resolvedProgress;
     final Color trackColor = AppTone.ringTrack;
@@ -128,6 +131,9 @@ class _RunSurfaceState extends State<RunSurface> {
                           fontWeight: FontWeight.w700,
                           letterSpacing: -2,
                           height: 0.95,
+                          fontFeatures: <ui.FontFeature>[
+                            ui.FontFeature.tabularFigures(),
+                          ],
                         ),
                       ),
                     ),

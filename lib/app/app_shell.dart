@@ -18,6 +18,8 @@ class AppShell extends StatelessWidget {
       tabBar: CupertinoTabBar(
         activeColor: AppTone.accent,
         inactiveColor: AppTone.tabInactive,
+        backgroundColor: AppTone.tabBarBackground,
+        border: Border(top: BorderSide(color: AppTone.tabBarBorder)),
         items: <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(
