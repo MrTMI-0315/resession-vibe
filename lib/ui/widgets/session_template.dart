@@ -22,6 +22,9 @@ class SessionTemplate extends StatelessWidget {
     this.presetLabelBuilder,
     this.focusTimerTextKey,
     this.focusCtaKey,
+    this.timerTapTargetKey,
+    this.onTimerTap,
+    this.showStatusLabel = true,
   });
 
   final String statusLabel;
@@ -38,6 +41,9 @@ class SessionTemplate extends StatelessWidget {
   final String Function(SessionPreset)? presetLabelBuilder;
   final Key? focusTimerTextKey;
   final Key? focusCtaKey;
+  final Key? timerTapTargetKey;
+  final VoidCallback? onTimerTap;
+  final bool showStatusLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -75,33 +81,48 @@ class SessionTemplate extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(height: 48),
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                                vertical: 8,
-                              ),
-                              child: Text(
-                                statusLabel,
-                                key: const ValueKey<String>(
-                                  'focus-status-label',
+                            if (showStatusLabel) ...<Widget>[
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 8,
                                 ),
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Color(0xFFB5B5B5),
+                                child: Text(
+                                  statusLabel,
+                                  key: const ValueKey<String>(
+                                    'focus-status-label',
+                                  ),
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Color(0x80FFFFFF),
+                                    fontWeight: FontWeight.w400,
+                                  ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              timeText,
-                              key: focusTimerTextKey,
-                              style: const TextStyle(
-                                fontSize: 84,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: -2,
-                                color: Colors.white,
-                                height: 0.95,
+                              const SizedBox(height: 10),
+                            ],
+                            GestureDetector(
+                              key: timerTapTargetKey,
+                              behavior: HitTestBehavior.opaque,
+                              onTap: onTimerTap,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    timeText,
+                                    key: focusTimerTextKey,
+                                    style: const TextStyle(
+                                      fontSize: 84,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: -2,
+                                      color: Colors.white,
+                                      height: 0.95,
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
                             const SizedBox(height: 10),

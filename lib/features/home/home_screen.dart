@@ -22,18 +22,22 @@ class HomeScreen extends StatelessWidget {
         .toList();
     final bool canStartSession = controller.canStartSession;
     final String? guardrailMessage = controller.startGuardrailMessage;
+    final VoidCallback? handleStart = canStartSession
+        ? () => controller.startSession(title: controller.pendingSessionTitle)
+        : null;
 
     return SessionTemplate(
       useMonolithicSurface: true,
       focusTimerTextKey: const ValueKey<String>('focus-timer-text'),
       focusCtaKey: const ValueKey<String>('focus-primary-cta'),
+      timerTapTargetKey: const ValueKey<String>('idle-timer-tap-target'),
+      onTimerTap: handleStart,
+      showStatusLabel: false,
       statusLabel: 'Idle',
       timeText: SessionController.formatClock(preset.focusSeconds),
       description: 'Focus • Break ${preset.breakMinutes}m',
       ctaLabel: 'Start session',
-      onCtaPressed: canStartSession
-          ? () => controller.startSession(title: controller.pendingSessionTitle)
-          : null,
+      onCtaPressed: handleStart,
       presets: SessionController.presets,
       selectedPreset: preset,
       onPresetSelected: (SessionPreset selected) {

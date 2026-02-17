@@ -100,7 +100,6 @@ void main() {
 
     expect(find.byKey(const ValueKey<String>('screen-focus')), findsOneWidget);
     expect(find.text('Resession'), findsOneWidget);
-    expect(find.text('Idle'), findsOneWidget);
     expect(
       find.byKey(const ValueKey<String>('focus-timer-text')),
       findsOneWidget,
@@ -127,6 +126,35 @@ void main() {
       find.byKey(const ValueKey<String>('preset-check-25/5')),
       findsNothing,
     );
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    controller.dispose();
+  });
+
+  testWidgets('Idle timer tap target starts focus run surface', (
+    WidgetTester tester,
+  ) async {
+    final SessionController controller = SessionController(
+      storage: InMemorySessionStorage(),
+    );
+
+    await tester.pumpWidget(ResessionApp(controller: controller));
+    await tester.pump();
+
+    expect(controller.runState.phase, SessionPhase.idle);
+    expect(
+      find.byKey(const ValueKey<String>('idle-timer-tap-target')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey<String>('run-surface')), findsNothing);
+
+    await tester.tap(
+      find.byKey(const ValueKey<String>('idle-timer-tap-target')),
+    );
+    await tester.pump();
+
+    expect(controller.runState.phase, SessionPhase.focus);
+    expect(find.byKey(const ValueKey<String>('run-surface')), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
     controller.dispose();
