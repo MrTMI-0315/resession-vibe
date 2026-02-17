@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:resession/services/notification_service.dart';
 
 abstract class SessionNotificationService {
   Future<void> initialize();
@@ -31,9 +32,13 @@ class LocalSessionNotificationService implements SessionNotificationService {
   static const int _focusToBreakNotificationId = 11001;
   static const int _breakToFocusNotificationId = 11002;
 
-  final FlutterLocalNotificationsPlugin _plugin =
-      FlutterLocalNotificationsPlugin();
+  LocalSessionNotificationService({NotificationService? notificationService})
+    : _notificationService = notificationService ?? NotificationService() {
+    _plugin = _notificationService.plugin;
+  }
 
+  late final NotificationService _notificationService;
+  late final FlutterLocalNotificationsPlugin _plugin;
   bool _initialized = false;
   bool _permissionGranted = false;
 
@@ -44,27 +49,8 @@ class LocalSessionNotificationService implements SessionNotificationService {
     }
     try {
       tz.initializeTimeZones();
-      const DarwinInitializationSettings darwinSettings =
-          DarwinInitializationSettings(
-            requestAlertPermission: false,
-            requestBadgePermission: false,
-            requestSoundPermission: false,
-          );
-      const InitializationSettings settings = InitializationSettings(
-        iOS: darwinSettings,
-      );
-      await _plugin.initialize(settings);
-      final IOSFlutterLocalNotificationsPlugin? darwin = _plugin
-          .resolvePlatformSpecificImplementation<
-            IOSFlutterLocalNotificationsPlugin
-          >();
-      _permissionGranted =
-          await darwin?.requestPermissions(
-            alert: true,
-            badge: false,
-            sound: true,
-          ) ??
-          false;
+      await _notificationService.init();
+      _permissionGranted = await _notificationService.requestPermissions();
       _initialized = true;
     } catch (_) {
       _initialized = true;
@@ -98,8 +84,8 @@ class LocalSessionNotificationService implements SessionNotificationService {
       return;
     }
     try {
-      await _plugin.cancel(_focusToBreakNotificationId);
-      await _plugin.cancel(_breakToFocusNotificationId);
+      await _plugin.cancel(id: _focusToBreakNotificationId);
+      await _plugin.cancel(id: _breakToFocusNotificationId);
     } catch (_) {}
   }
 
@@ -129,11 +115,11 @@ class LocalSessionNotificationService implements SessionNotificationService {
         ),
       );
       await _plugin.zonedSchedule(
-        id,
-        title,
-        body,
-        at,
-        details,
+        id: id,
+        title: title,
+        body: body,
+        scheduledDate: at,
+        notificationDetails: details,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       );
     } catch (_) {}
