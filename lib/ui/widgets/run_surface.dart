@@ -13,6 +13,8 @@ class RunSurface extends StatelessWidget {
     this.timerTextKey,
     this.phaseLabelColor,
     this.ringColor,
+    this.animate = true,
+    this.animationDuration = const Duration(milliseconds: 800),
   });
 
   final String phaseLabel;
@@ -22,6 +24,8 @@ class RunSurface extends StatelessWidget {
   final Key? timerTextKey;
   final Color? phaseLabelColor;
   final Color? ringColor;
+  final bool animate;
+  final Duration animationDuration;
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +34,9 @@ class RunSurface extends StatelessWidget {
     final double resolvedProgress = progress.clamp(0.0, 1.0);
     final Color trackColor = AppTone.ringTrack;
     final Color progressColor = resolvedRingColor.withValues(alpha: 0.85);
+    final Duration effectiveDuration = animate
+        ? animationDuration
+        : Duration.zero;
 
     return GestureDetector(
       onTap: onTap,
@@ -56,13 +63,28 @@ class RunSurface extends StatelessWidget {
                 child: Stack(
                   fit: StackFit.expand,
                   children: <Widget>[
-                    CustomPaint(
-                      key: const ValueKey<String>('run-ring'),
-                      painter: _RunRingPainter(
-                        trackColor: trackColor,
-                        progressColor: progressColor,
-                        progress: resolvedProgress,
+                    TweenAnimationBuilder<double>(
+                      duration: effectiveDuration,
+                      curve: Curves.easeOutCubic,
+                      tween: Tween<double>(
+                        begin: resolvedProgress,
+                        end: resolvedProgress,
                       ),
+                      builder:
+                          (
+                            BuildContext context,
+                            double animatedProgress,
+                            Widget? child,
+                          ) {
+                            return CustomPaint(
+                              key: const ValueKey<String>('run-ring'),
+                              painter: _RunRingPainter(
+                                trackColor: trackColor,
+                                progressColor: progressColor,
+                                progress: animatedProgress,
+                              ),
+                            );
+                          },
                     ),
                     Center(
                       child: Text(

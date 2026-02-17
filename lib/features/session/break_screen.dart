@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../ui/widgets/run_surface.dart';
+import '../../ui/theme/app_tone.dart';
 import 'session_controller.dart';
 
 class BreakScreen extends StatelessWidget {
@@ -32,7 +33,8 @@ class BreakScreen extends StatelessWidget {
             ),
             progress: progress,
             onTap: controller.resumeFocus,
-            phaseLabelColor: const Color(0xFFFFD8C5),
+            phaseLabelColor: AppTone.breakTone,
+            ringColor: AppTone.breakTone,
           ),
         ),
       ),

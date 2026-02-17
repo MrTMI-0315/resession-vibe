@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../ui/widgets/run_surface.dart';
+import '../../ui/theme/app_tone.dart';
 import 'session_controller.dart';
 
 class SessionScreen extends StatelessWidget {
@@ -32,7 +33,8 @@ class SessionScreen extends StatelessWidget {
             ),
             progress: progress,
             onTap: controller.pauseForBreak,
-            phaseLabelColor: const Color(0xFFD3E9FF),
+            phaseLabelColor: AppTone.focusTone,
+            ringColor: AppTone.focusTone,
           ),
         ),
       ),
