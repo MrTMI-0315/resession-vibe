@@ -214,27 +214,58 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
     expect(find.text('24:59'), findsOneWidget);
 
-    await tester.tap(find.text('Pause'));
+    await tester.tap(find.byKey(const ValueKey<String>('run-surface')));
     await tester.pump();
 
-    expect(find.text('Break'), findsOneWidget);
+    expect(find.byKey(const ValueKey<String>('screen-break')), findsOneWidget);
     expect(find.text('05:00'), findsOneWidget);
 
     clock.advance(const Duration(seconds: 2));
     await tester.pump(const Duration(seconds: 2));
     expect(find.text('04:58'), findsOneWidget);
 
-    await tester.tap(find.text('Resume'));
+    await tester.tap(find.byKey(const ValueKey<String>('run-surface')));
     await tester.pump();
 
-    expect(find.text('Focus'), findsOneWidget);
+    expect(find.byKey(const ValueKey<String>('screen-focus')), findsOneWidget);
     expect(find.text('24:59'), findsOneWidget);
 
-    await tester.tap(find.text('Pause'));
+    await tester.tap(find.byKey(const ValueKey<String>('run-surface')));
     await tester.pump();
 
-    expect(find.text('Break'), findsOneWidget);
+    expect(find.byKey(const ValueKey<String>('screen-break')), findsOneWidget);
     expect(find.text('05:00'), findsNothing);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    controller.dispose();
+  });
+
+  testWidgets('Run surface tap toggles focus and break', (
+    WidgetTester tester,
+  ) async {
+    final _TestClock clock = _TestClock(DateTime(2026, 1, 1, 0, 0, 0));
+    final SessionController controller = SessionController(
+      nowProvider: () => clock.now,
+      storage: InMemorySessionStorage(),
+    );
+
+    await tester.pumpWidget(ResessionApp(controller: controller));
+    await tester.pump();
+
+    await tester.tap(find.byKey(const ValueKey<String>('focus-primary-cta')));
+    await tester.pump();
+    expect(find.byKey(const ValueKey<String>('screen-focus')), findsOneWidget);
+    expect(find.byKey(const ValueKey<String>('run-surface')), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey<String>('run-surface')));
+    await tester.pump();
+    expect(find.byKey(const ValueKey<String>('screen-break')), findsOneWidget);
+    expect(find.text('05:00'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey<String>('run-surface')));
+    await tester.pump();
+    expect(find.byKey(const ValueKey<String>('screen-focus')), findsOneWidget);
+    expect(find.text('25:00'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
     controller.dispose();
@@ -255,20 +286,20 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey<String>('focus-primary-cta')));
     await tester.pump();
-    await tester.tap(find.text('Pause'));
+    await tester.tap(find.byKey(const ValueKey<String>('run-surface')));
     await tester.pump();
 
     expect(controller.runState.phase, SessionPhase.breakTime);
-    expect(find.text('Break'), findsOneWidget);
-    expect(find.text('Resume'), findsOneWidget);
+    expect(find.byKey(const ValueKey<String>('screen-break')), findsOneWidget);
+    expect(find.text('Focus'), findsNothing);
 
     clock.advance(const Duration(seconds: 61));
     await tester.pump(const Duration(seconds: 61));
 
     expect(controller.runState.phase, SessionPhase.focus);
     expect(controller.currentBreakRemainingSeconds, 0);
-    expect(find.text('Focus'), findsOneWidget);
-    expect(find.text('Resume'), findsNothing);
+    expect(find.byKey(const ValueKey<String>('screen-focus')), findsOneWidget);
+    expect(find.text('Break'), findsNothing);
 
     await tester.pumpWidget(const SizedBox.shrink());
     controller.dispose();
@@ -293,7 +324,7 @@ void main() {
     await tester.pump();
     expect(notifications.scheduledEvents.last, 'focus:60');
 
-    await tester.tap(find.text('Pause'));
+    await tester.tap(find.byKey(const ValueKey<String>('run-surface')));
     await tester.pump();
     expect(notifications.scheduledEvents.last, 'break:60');
 
@@ -361,19 +392,8 @@ void main() {
     await tester.pump();
     expect(controller.runState.phase, SessionPhase.focus);
 
-    await tester.tap(find.byKey(const ValueKey<String>('drift-open-button')));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Drift log'), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey<String>('drift-category-알림')));
-    await tester.enterText(
-      find.byKey(const ValueKey<String>('drift-note-input')),
-      'ping',
-    );
-    await tester.tap(
-      find.byKey(const ValueKey<String>('drift-confirm-button')),
-    );
-    await tester.pumpAndSettle();
+    controller.logDrift(category: '알림', note: 'ping');
+    await tester.pump();
 
     expect(controller.runState.phase, SessionPhase.focus);
     expect(controller.runState.driftEvents.length, 1);
@@ -472,11 +492,9 @@ void main() {
     await tester.tap(find.text('Log / Save'));
     await tester.pump();
 
-    expect(find.text('Recent Sessions'), findsOneWidget);
-    expect(
-      find.textContaining('Write report • Custom (1/1) •'),
-      findsOneWidget,
-    );
+    await openHistory(tester);
+    await tester.pumpAndSettle();
+    expect(find.text('Write report'), findsOneWidget);
     expect(find.text('Session Summary'), findsNothing);
 
     await tester.pumpWidget(const SizedBox.shrink());
@@ -490,11 +508,9 @@ void main() {
     await tester.pumpWidget(ResessionApp(controller: secondController));
     await tester.pump();
 
-    expect(find.text('Recent Sessions'), findsOneWidget);
-    expect(
-      find.textContaining('Write report • Custom (1/1) •'),
-      findsOneWidget,
-    );
+    await openHistory(tester);
+    await tester.pumpAndSettle();
+    expect(find.text('Write report'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
     secondController.dispose();
@@ -528,6 +544,8 @@ void main() {
 
     await tester.tap(find.text('Log / Save'));
     await tester.pump();
+    await openHistory(tester);
+    await tester.pumpAndSettle();
     expect(find.textContaining('Drift: 알림'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
@@ -540,8 +558,6 @@ void main() {
 
     await tester.pumpWidget(ResessionApp(controller: secondController));
     await tester.pump();
-
-    expect(find.textContaining('Drift: 알림'), findsOneWidget);
 
     await openHistory(tester);
     await tester.pumpAndSettle();
@@ -579,6 +595,8 @@ void main() {
 
     await tester.tap(find.text('Log / Save'));
     await tester.pump();
+    await openHistory(tester);
+    await tester.pumpAndSettle();
     expect(find.textContaining('Drift: 메신저 (quick check)'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
@@ -592,7 +610,9 @@ void main() {
     await tester.pumpWidget(ResessionApp(controller: secondController));
     await tester.pump();
 
-    expect(find.textContaining('Drift: 메신저 (quick check)'), findsOneWidget);
+    await openHistory(tester);
+    await tester.pumpAndSettle();
+    expect(find.text('Drift: 메신저 (quick check)'), findsOneWidget);
 
     await openHistory(tester);
     await tester.pumpAndSettle();
@@ -630,7 +650,9 @@ void main() {
     await tester.tap(find.text('Log / Save'));
     await tester.pump();
 
-    expect(find.textContaining(' • $driftText'), findsOneWidget);
+    await openHistory(tester);
+    await tester.pumpAndSettle();
+    expect(find.textContaining(driftText), findsOneWidget);
 
     await openHistory(tester);
     await tester.pumpAndSettle();
@@ -683,7 +705,9 @@ void main() {
 
     await tester.tap(find.text('Log / Save'));
     await tester.pump();
-    expect(find.textContaining(' • Drift: 완벽주의'), findsOneWidget);
+    await openHistory(tester);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Drift: 완벽주의'), findsOneWidget);
 
     await openHistory(tester);
     await tester.pumpAndSettle();
@@ -728,7 +752,9 @@ void main() {
 
       await tester.tap(find.text('Log / Save'));
       await tester.pump();
-      expect(find.textContaining(' • Drift: 알림'), findsOneWidget);
+      await openHistory(tester);
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Drift: 알림'), findsOneWidget);
 
       await openHistory(tester);
       await tester.pumpAndSettle();
@@ -773,7 +799,9 @@ void main() {
 
       await tester.tap(find.text('Log / Save'));
       await tester.pump();
-      expect(find.textContaining(' • $expectedSnapshot'), findsOneWidget);
+      await openHistory(tester);
+      await tester.pumpAndSettle();
+      expect(find.textContaining(expectedSnapshot), findsOneWidget);
 
       await openHistory(tester);
       await tester.pumpAndSettle();
@@ -817,7 +845,9 @@ void main() {
 
       await tester.tap(find.text('Log / Save'));
       await tester.pump();
-      expect(find.textContaining(' • $expectedSnapshot'), findsOneWidget);
+      await openHistory(tester);
+      await tester.pumpAndSettle();
+      expect(find.textContaining(expectedSnapshot), findsOneWidget);
 
       await openHistory(tester);
       await tester.pumpAndSettle();
@@ -858,7 +888,9 @@ void main() {
 
       await tester.tap(find.text('Log / Save'));
       await tester.pump();
-      expect(find.textContaining(' • $expectedSnapshot'), findsOneWidget);
+      await openHistory(tester);
+      await tester.pumpAndSettle();
+      expect(find.textContaining(expectedSnapshot), findsOneWidget);
 
       await openHistory(tester);
       await tester.pumpAndSettle();
@@ -898,7 +930,9 @@ void main() {
 
       await tester.tap(find.text('Log / Save'));
       await tester.pump();
-      expect(find.textContaining(' • $expectedSnapshot'), findsOneWidget);
+      await openHistory(tester);
+      await tester.pumpAndSettle();
+      expect(find.textContaining(expectedSnapshot), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox.shrink());
       firstController.dispose();
@@ -911,7 +945,9 @@ void main() {
       await tester.pumpWidget(ResessionApp(controller: secondController));
       await tester.pump();
 
-      expect(find.textContaining(' • $expectedSnapshot'), findsOneWidget);
+      await openHistory(tester);
+      await tester.pumpAndSettle();
+      expect(find.textContaining(expectedSnapshot), findsOneWidget);
 
       await openHistory(tester);
       await tester.pumpAndSettle();
@@ -951,7 +987,9 @@ void main() {
 
       await tester.tap(find.text('Log / Save'));
       await tester.pump();
-      expect(find.textContaining(' • $expectedSnapshot'), findsOneWidget);
+      await openHistory(tester);
+      await tester.pumpAndSettle();
+      expect(find.textContaining(expectedSnapshot), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox.shrink());
       firstController.dispose();
@@ -964,7 +1002,9 @@ void main() {
       await tester.pumpWidget(ResessionApp(controller: secondController));
       await tester.pump();
 
-      expect(find.textContaining(' • $expectedSnapshot'), findsOneWidget);
+      await openHistory(tester);
+      await tester.pumpAndSettle();
+      expect(find.textContaining(expectedSnapshot), findsOneWidget);
 
       await openHistory(tester);
       await tester.pumpAndSettle();
@@ -1004,7 +1044,9 @@ void main() {
 
       await tester.tap(find.text('Log / Save'));
       await tester.pump();
-      expect(find.textContaining(' • $expectedSnapshot'), findsOneWidget);
+      await openHistory(tester);
+      await tester.pumpAndSettle();
+      expect(find.textContaining(expectedSnapshot), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox.shrink());
       firstController.dispose();
@@ -1017,7 +1059,9 @@ void main() {
       await tester.pumpWidget(ResessionApp(controller: secondController));
       await tester.pump();
 
-      expect(find.textContaining(' • $expectedSnapshot'), findsOneWidget);
+      await openHistory(tester);
+      await tester.pumpAndSettle();
+      expect(find.textContaining(expectedSnapshot), findsOneWidget);
 
       await openHistory(tester);
       await tester.pumpAndSettle();
@@ -1699,8 +1743,6 @@ void main() {
     await tester.pump(const Duration(seconds: 65));
     await tester.tap(find.text('Log / Save'));
     await tester.pump();
-
-    expect(find.textContaining('Untitled • Custom (1/1) •'), findsOneWidget);
 
     await openHistory(tester);
     await tester.pumpAndSettle();

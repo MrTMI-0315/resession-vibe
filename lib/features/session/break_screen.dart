@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../ui/widgets/session_template.dart';
+import '../../ui/widgets/run_surface.dart';
 import 'session_controller.dart';
 
 class BreakScreen extends StatelessWidget {
@@ -10,20 +10,25 @@ class BreakScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final SessionRunState state = controller.runState;
-
-    return SessionTemplate(
-      statusLabel: 'Break',
-      statusDotColor: const Color(0xFFF18E6D),
-      timeText: SessionController.formatClock(
-        controller.currentBreakRemainingSeconds,
+    return Scaffold(
+      key: const ValueKey<String>('screen-break'),
+      backgroundColor: const Color(0xFF1A1D22),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+          child: RunSurface(
+            key: const ValueKey<String>('run-surface'),
+            phaseLabel: 'Break',
+            timerTextKey: const ValueKey<String>('run-timer-text'),
+            timeText: SessionController.formatClock(
+              controller.currentBreakRemainingSeconds,
+            ),
+            onTap: controller.resumeFocus,
+            ringColor: const Color(0xFFF18E6D),
+            phaseLabelColor: const Color(0xFFFFD8C5),
+          ),
+        ),
       ),
-      description: 'Break ${state.preset.breakMinutes}m',
-      ctaLabel: 'Resume',
-      onCtaPressed: controller.resumeFocus,
-      presets: SessionController.presets,
-      selectedPreset: state.preset,
-      presetLabelBuilder: controller.presetDisplayLabel,
     );
   }
 }
