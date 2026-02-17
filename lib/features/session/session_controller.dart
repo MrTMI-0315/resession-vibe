@@ -371,10 +371,7 @@ class SessionController extends ChangeNotifier {
     if (!_isCustomPreset(preset)) {
       return preset.label;
     }
-    if (_configuredCustomPreset == null) {
-      return customPresetLabel;
-    }
-    return 'Custom (${_configuredCustomPreset!.focusMinutes}/${_configuredCustomPreset!.breakMinutes})';
+    return 'Custom';
   }
 
   void selectCustomPreset(int focusMinutes, int breakMinutes) {

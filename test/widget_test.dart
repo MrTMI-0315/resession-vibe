@@ -189,7 +189,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Custom (40/8)'), findsOneWidget);
+      expect(find.text('Custom'), findsOneWidget);
 
       await tester.tap(find.byKey(const ValueKey<String>('focus-primary-cta')));
       await tester.pump();
