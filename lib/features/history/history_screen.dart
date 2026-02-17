@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../session/session_controller.dart';
 import '../session/session_record.dart';
+import '../../ui/theme/app_tone.dart';
 
 enum _HistoryFilterScope { all, recent7 }
 
@@ -59,7 +60,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             margin: const EdgeInsets.all(12),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFFF8F8F8),
+              color: Colors.transparent,
               borderRadius: BorderRadius.circular(24),
             ),
             child: Column(
@@ -90,11 +91,21 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         )
                       : ListView.separated(
                           itemCount: records.length,
-                          separatorBuilder: (_, index) =>
-                              const SizedBox(height: 8),
+                          separatorBuilder: (_, int index) => Divider(
+                            height: 1,
+                            thickness: 1,
+                            color: AppTone.surfaceBorder,
+                            indent: 12,
+                            endIndent: 12,
+                          ),
                           itemBuilder: (BuildContext context, int index) {
                             final SessionRecord record = records[index];
-                            return _RecordCard(record: record);
+                            return _RecordCard(
+                              record: record,
+                              key: ValueKey<String>(
+                                'history-record-row-$index',
+                              ),
+                            );
                           },
                         ),
                 ),
@@ -187,48 +198,78 @@ class _InsightHeader extends StatelessWidget {
 }
 
 class _RecordCard extends StatelessWidget {
-  const _RecordCard({required this.record});
+  const _RecordCard({required this.record, super.key});
 
   final SessionRecord record;
 
   @override
   Widget build(BuildContext context) {
+    final String presetLabel = record.presetLabel;
+    final String driftSummary =
+        SessionController.summarizeLastDriftSummary(record.drifts) ?? '';
+    final String focusDuration = SessionController.formatDurationMMSS(
+      record.actualFocusSeconds,
+    );
+    final String line2 = driftSummary.isEmpty
+        ? '$presetLabel • Focus $focusDuration • ${_formatDateTime(record.endedAt)}'
+        : '$presetLabel • Focus $focusDuration • $driftSummary • ${_formatDateTime(record.endedAt)}';
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF0F0F0),
+        color: AppTone.surface,
         borderRadius: BorderRadius.circular(12),
+        border: const Border.fromBorderSide(
+          BorderSide(color: AppTone.surfaceBorder),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             SessionController.displayTitle(record.title),
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppTone.textPrimary,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
-            'Preset: ${record.presetLabel}',
-            style: const TextStyle(fontSize: 12),
-          ),
-          Text(
-            'Focus: ${SessionController.formatDurationMMSS(record.actualFocusSeconds)}',
-            style: const TextStyle(fontSize: 12),
-          ),
-          Text(
-            'Break: ${SessionController.formatDurationMMSS(record.actualBreakSeconds)}',
-            style: const TextStyle(fontSize: 12),
-          ),
-          if (SessionController.summarizeLastDriftSummary(record.drifts) !=
-              null)
-            Text(
-              SessionController.summarizeLastDriftSummary(record.drifts)!,
-              style: const TextStyle(fontSize: 12),
+            line2,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppTone.textSecondary,
+              letterSpacing: -0.2,
             ),
-          Text(
-            'Start: ${_formatDateTime(record.startedAt)}',
-            style: const TextStyle(fontSize: 12),
           ),
+          if (driftSummary.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Wrap(
+                spacing: 6,
+                children: <Widget>[
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppTone.surfaceStrong,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      driftSummary,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: AppTone.textSecondary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );

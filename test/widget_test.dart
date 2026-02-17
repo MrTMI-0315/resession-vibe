@@ -667,7 +667,7 @@ void main() {
     await tester.pump();
     await openHistory(tester);
     await tester.pumpAndSettle();
-    expect(find.textContaining('Drift: 알림'), findsOneWidget);
+    expect(find.textContaining('Drift: 알림'), findsAtLeastNWidgets(1));
 
     await tester.pumpWidget(const SizedBox.shrink());
     firstController.dispose();
@@ -718,7 +718,10 @@ void main() {
     await tester.pump();
     await openHistory(tester);
     await tester.pumpAndSettle();
-    expect(find.textContaining('Drift: 메신저 (quick check)'), findsOneWidget);
+    expect(
+      find.textContaining('Drift: 메신저 (quick check)'),
+      findsAtLeastNWidgets(1),
+    );
 
     await tester.pumpWidget(const SizedBox.shrink());
     firstController.dispose();
@@ -773,7 +776,7 @@ void main() {
 
     await openHistory(tester);
     await tester.pumpAndSettle();
-    expect(find.textContaining(driftText), findsOneWidget);
+    expect(find.textContaining(driftText), findsAtLeastNWidgets(1));
 
     await openHistory(tester);
     await tester.pumpAndSettle();
@@ -828,7 +831,7 @@ void main() {
     await tester.pump();
     await openHistory(tester);
     await tester.pumpAndSettle();
-    expect(find.textContaining('Drift: 완벽주의'), findsOneWidget);
+    expect(find.textContaining('Drift: 완벽주의'), findsAtLeastNWidgets(1));
 
     await openHistory(tester);
     await tester.pumpAndSettle();
@@ -875,7 +878,7 @@ void main() {
       await tester.pump();
       await openHistory(tester);
       await tester.pumpAndSettle();
-      expect(find.textContaining('Drift: 알림'), findsOneWidget);
+      expect(find.textContaining('Drift: 알림'), findsAtLeastNWidgets(1));
 
       await openHistory(tester);
       await tester.pumpAndSettle();
@@ -922,7 +925,7 @@ void main() {
       await tester.pump();
       await openHistory(tester);
       await tester.pumpAndSettle();
-      expect(find.textContaining(expectedSnapshot), findsOneWidget);
+      expect(find.textContaining(expectedSnapshot), findsAtLeastNWidgets(1));
 
       await openHistory(tester);
       await tester.pumpAndSettle();
@@ -968,7 +971,7 @@ void main() {
       await tester.pump();
       await openHistory(tester);
       await tester.pumpAndSettle();
-      expect(find.textContaining(expectedSnapshot), findsOneWidget);
+      expect(find.textContaining(expectedSnapshot), findsAtLeastNWidgets(1));
 
       await openHistory(tester);
       await tester.pumpAndSettle();
@@ -1005,17 +1008,17 @@ void main() {
       await tester.pump(const Duration(seconds: 65));
 
       expect(find.text('End'), findsOneWidget);
-      expect(find.textContaining(expectedSnapshot), findsOneWidget);
+      expect(find.textContaining(expectedSnapshot), findsAtLeastNWidgets(1));
 
       await tester.tap(find.text('Log / Save'));
       await tester.pump();
       await openHistory(tester);
       await tester.pumpAndSettle();
-      expect(find.textContaining(expectedSnapshot), findsOneWidget);
+      expect(find.textContaining(expectedSnapshot), findsAtLeastNWidgets(1));
 
       await openHistory(tester);
       await tester.pumpAndSettle();
-      expect(find.textContaining(expectedSnapshot), findsOneWidget);
+      expect(find.textContaining(expectedSnapshot), findsAtLeastNWidgets(1));
 
       await tester.pumpWidget(const SizedBox.shrink());
       controller.dispose();
@@ -1053,7 +1056,7 @@ void main() {
       await tester.pump();
       await openHistory(tester);
       await tester.pumpAndSettle();
-      expect(find.textContaining(expectedSnapshot), findsOneWidget);
+      expect(find.textContaining(expectedSnapshot), findsAtLeastNWidgets(1));
 
       await tester.pumpWidget(const SizedBox.shrink());
       firstController.dispose();
@@ -1068,7 +1071,7 @@ void main() {
 
       await openHistory(tester);
       await tester.pumpAndSettle();
-      expect(find.textContaining(expectedSnapshot), findsOneWidget);
+      expect(find.textContaining(expectedSnapshot), findsAtLeastNWidgets(1));
 
       await openHistory(tester);
       await tester.pumpAndSettle();
@@ -1110,7 +1113,7 @@ void main() {
       await tester.pump();
       await openHistory(tester);
       await tester.pumpAndSettle();
-      expect(find.textContaining(expectedSnapshot), findsOneWidget);
+      expect(find.textContaining(expectedSnapshot), findsAtLeastNWidgets(1));
 
       await tester.pumpWidget(const SizedBox.shrink());
       firstController.dispose();
@@ -1125,7 +1128,7 @@ void main() {
 
       await openHistory(tester);
       await tester.pumpAndSettle();
-      expect(find.textContaining(expectedSnapshot), findsOneWidget);
+      expect(find.textContaining(expectedSnapshot), findsAtLeastNWidgets(1));
 
       await openHistory(tester);
       await tester.pumpAndSettle();
@@ -1167,7 +1170,7 @@ void main() {
       await tester.pump();
       await openHistory(tester);
       await tester.pumpAndSettle();
-      expect(find.textContaining(expectedSnapshot), findsOneWidget);
+      expect(find.textContaining(expectedSnapshot), findsAtLeastNWidgets(1));
 
       await tester.pumpWidget(const SizedBox.shrink());
       firstController.dispose();
@@ -1182,7 +1185,7 @@ void main() {
 
       await openHistory(tester);
       await tester.pumpAndSettle();
-      expect(find.textContaining(expectedSnapshot), findsOneWidget);
+      expect(find.textContaining(expectedSnapshot), findsAtLeastNWidgets(1));
 
       await openHistory(tester);
       await tester.pumpAndSettle();
@@ -1287,8 +1290,8 @@ void main() {
     expect(find.text('Top Drift (last 7): none'), findsOneWidget);
     expect(find.text('Untitled'), findsOneWidget);
     expect(find.text('Deep work'), findsOneWidget);
-    expect(find.text('Focus: 00:45'), findsOneWidget);
-    expect(find.text('Break: 00:15'), findsOneWidget);
+    expect(find.textContaining('Focus 00:45'), findsOneWidget);
+    expect(find.textContaining('Focus 01:15'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
     controller.dispose();
