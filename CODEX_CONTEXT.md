@@ -1,72 +1,72 @@
 # CODEX_CONTEXT.md
-작성 시점: 2026-02-11 (로컬 로그 기준)
+작성 시점: 2026-02-24 (최근 세션 반영)
 
 ## Project Overview
-- Resession은 "start -> focus run -> break -> end -> save" 루프를 빠르게 반복하도록 돕는 Flutter MVP 앱이다.
-- 핵심 목표는 기록 부담을 낮추면서도 세션 통제감(일시정지/복귀/저장)을 제공하는 것이다.
-- SSOT는 `ChangeNotifier` 기반 `SessionController` 1개이며, UI는 컨트롤러 상태를 반영한다.
+- Resession은 `Home/Idle → Focus → Break → End → Save → Home` 루프로 운영되는 Flutter MVP다.
+- 핵심 SSOT는 `SessionController` 1개(`ChangeNotifier`)이며, 상태/저장/복구 로직은 컨트롤러를 중심으로 유지한다.
+- 현재 참조 범위는 `Resession MVP v0.3` 기준이며, 타이머/저장/복구 불변식은 유지한다.
 
 ## Current Status (Implemented)
-- 플로우: `Home/Idle -> Focus -> Break -> End -> Save -> Home` 동작.
-- 프리셋: `25/5`, `50/10`, `custom` 선택 가능, custom은 bottom sheet 입력 후 `Custom (x/y)`로 반영.
-- 타이머 불변식: Break 중 Focus 동결, Break 공유 예산 유지(재진입 시 리셋 없음), remaining 0 clamp.
-- Decision (MVP): Break 타이머가 0에 도달하면 사용자 입력 없이 자동으로 Focus로 복귀한다. (토글/A-B 없음)
-- 시간 계산: `phaseStartedAt + baseRemaining` 기반 getter(`currentFocusRemainingSeconds`, `currentBreakRemainingSeconds`).
-- 기록: `SessionRecord`를 `shared_preferences` 키 `resession_session_records_v1`로 저장/로드.
-- 활성 세션 상태(`resession_active_run_state_v1`)를 저장/복구해 재실행 후에도 phase/remaining 동기화를 유지한다.
-- Focus/BREAK 전환 알림은 로컬 알림으로 최소 1건씩 스케줄링되며, 권한 거부 시 무음(no-op)으로 degrade한다.
-- Session title: Home 입력(`지금 할 일(선택)`) -> Start 전달 -> Save 시 record 반영 -> End/History/Home Recent에 표시(미입력 시 `Untitled`).
-- History 화면: Home에서 진입 가능, 최신순 목록 + mm:ss(actual focus/break) + 최소 Insight(최근 최대 7개 평균 Focus) 표시.
-- 공통 UI: `session_template`, `session_status_card`, `preset_selector`, `primary_cta_button` 재사용.
+- Session 플로우는 `Home/Idle -> Focus -> Break -> End -> Save -> Home` 동작 유지.
+- Break 타이머가 0초에 도달하면 자동으로 Focus 복귀(입력 개입 최소화).
+- 타이머 불변식:
+  - remaining clamp
+  - Break 중 Focus 동결
+  - Break 공유 예산 유지(재진입 리셋 없음)
+  - phaseStartedAt + baseRemaining 기반 재동기화
+- 저장/복구:
+  - 기록: `resession_session_records_v1`
+  - 활성 상태: `resession_active_run_state_v1`
+  - 앱 재시작 후에도 재개 상태 유지/복구 지원
+- Preset/UX:
+  - 프리셋 `25/5`, `50/10`, custom.
+  - custom 라벨 표기 정규화(`Custom` 기준).
+  - task 입력의 공백 허용 버그 보정.
+- 기록/리스트/인사이트:
+  - Home/History/End 최근 기록 노출 구조 유지.
+  - Recent 2줄 요약(타이틀/메타) UI 정렬.
+  - History 텍스트 로그형에서 리스트형으로 일관 정돈.
+  - TabBar/Run Surface/토스트/라벨 톤 정렬 진행.
+- 알림:
+  - `flutter_local_notifications` 기반 알림 경로 구성.
+  - Focus 완료 시 소리/배너/배지 동작이 iOS 기본 동작으로 연결되도록 정비.
+  - 무음 모드/기기 음소거 설정은 알림 청각 동작에 영향(설정 의존성)으로 분리 안내.
 
-## Known Gaps / Risks
-- 현재 브랜치에는 한 커밋에 여러 마이크로태스크 변경이 함께 포함된 이력이 있어 변경 추적성이 낮을 수 있다.
-- iOS/Android 디바이스 실주행 검증은 보장하지 않으며, 현재 검증 경로는 macOS/Chrome 중심이다.
-- History/Insight는 최소 구현이며, 고급 통계(기간 필터, 추세, 완료율 분해)는 미구현이다.
-- 자동복귀는 MVP 결정이며, 사용자 선호 차이는 후속 사용자 테스트/데모 피드백으로 검증한다. (옵션 토글/A-B는 MVP 범위 밖)
-- iPhone 무선 디바이스가 현재 감지되지 않을 수 있어 실기기 스모크는 케이블 연결/잠금해제/Developer Mode 상태에 의존한다.
+## Verification 상태
+- 품질 게이트(최근 상태):
+  - `dart format .` 통과
+  - `flutter analyze` 통과 (`No issues found!`)
+  - `flutter test` 통과 (기본 테스트 스위트 통과)
+  - `flutter build ios --debug --no-codesign` 통과
+- 실기기 확인:
+  - iPhone 유선 디버그/릴리즈 실행 루틴 실행 완료.
+  - 알림(배너/배지/사운드) 사용자 검증 완료(사운드 미재생 이슈는 기기 무음 모드/알림 설정으로 정리).
 
-## How to Run / Test
-기준 경로:
-```bash
-cd /Users/mrtmi/Desktop/Mr_TMI/vibe/apps/resession
-```
+## Repo Context
+- 기준 경로: `/Users/mrtmi/Desktop/Mr_TMI/repos/resession`
+- 실행 루틴:
+  - `flutter clean`
+  - `flutter pub get`
+  - `dart format .`
+  - `flutter analyze`
+  - `flutter test`
+  - `flutter build ios --debug --no-codesign`
+  - `flutter run -d <UDID or device>`
+- `cd` 기준이 잘못된 경우 과거 문서 경로(`.../vibe/apps/resession`)로 혼선이 있었음.
 
-앱 실행 (로컬):
-```bash
-flutter pub get
-flutter run -d macos
-# 또는
-flutter run -d chrome
-```
+## Workflow Rules
+- 1 micro-task = 1 commit = 1 push.
+- 최소 변경/요청 범위 준수.
+- `context.md`(문서) 자체는 스테이징/커밋 금지.
+- 실기기 실증 실패 시 release install 반복 금지(원인 로그 확보 후 조정).
 
-품질 게이트:
-```bash
-flutter clean
-flutter pub get
-dart format .
-flutter analyze
-flutter test
-flutter build ios --debug --no-codesign
-```
+## Known Risks
+- 실기기 인식/설치는 iOS Developer Mode, 잠금 해제, 연결 안정성, 신뢰할 수 있는 인증/권한 의존.
+- 알림은 기기 시스템 정책/방해금지 설정에 영향을 받음.
+- iOS 탭/오디오/포그라운드 알림 동작은 OS 상태에 따라 차이 존재.
 
-작성 시점 근거 로그:
-- `flutter analyze`: No issues found!
-- `flutter test`: All tests passed! (18 tests)
-- `flutter run -d chrome --no-resident`: Application finished.
-- `flutter build ios --debug --no-codesign`: `Built build/ios/iphoneos/Runner.app`
+## Next Tasks (Priority for V0.3)
+1) 실기기 릴리즈 경로에서 AC(백그라운드/잠금/알림) 로그 1회 더 고정(비회귀 증빙).
+2) History/Insight의 가독성/해석성(완료율/필터)을 최소 기능 단위로 분할해 재정의.
+3) iOS tone/contrast 접근성 점검(텍스트 대비·간격·가독성) 수치 기반 정리.
 
-## Workflow Rules (finish -> verify -> commit -> push)
-- 최소 변경 원칙: 요청 범위 밖 수정/리팩토링 금지.
-- 작업 완료 기준: 기능 반영 + 필요한 테스트/검증 로그 확보.
-- 완료마다 반드시 수행:
-  1) `git add -A`
-  2) Conventional Commit으로 1 작업 1 커밋
-  3) 현재 브랜치 push (`git push` / 업스트림 없으면 `git push -u origin HEAD`)
-- push 실패 시 즉시 `git remote -v` 확인 후 업스트림/리모트 문제를 해결하고 재시도.
-
-## Next Tasks (Prioritized)
-1) Drift 로그(v0.1 optional) 입력/저장 경로 추가 및 End/History 연동.
-2) History Insight 확장(예: 오늘 총 Focus, 최근 N개 완료율) + 필터 최소 UI.
-3) Session title UX 보강(길이 제한, 공백/중복 처리 가드레일, 관련 테스트 추가).
-4) (Future) Auto-resume 토글/A-B는 MVP 이후에만 고려한다(사용자 테스트 결과 기반).
